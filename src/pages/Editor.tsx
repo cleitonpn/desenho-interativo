@@ -70,11 +70,18 @@ export function Editor() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <header className="safe-top px-5 pt-5 flex items-center justify-between">
+    // h-dvh + overflow-hidden: o editor cabe numa tela e nao rola. Quem manda
+    // no espaco e a galinha, que encolhe quando a bandeja de pecas abre.
+    <div className="h-dvh overflow-hidden flex flex-col">
+      <header className="safe-top px-4 pt-3 pb-2 flex items-center justify-between shrink-0">
         <span className="font-display text-lg">{MARCA.nome}</span>
         <div className="flex items-center gap-2">
           <SeletorDeCor cor={cor} aoTrocar={setCor} />
+          <button onClick={() => { registrarAcao('limpeza'); setEscolhas({}); setSalvo(false) }}
+                  disabled={total === 0} aria-label="Limpar tudo" title="Limpar tudo"
+                  className="botao-neutro !px-3 !py-2 disabled:opacity-40">
+            <Eraser size={18} />
+          </button>
           <Link to="/minhas" className="botao-neutro !px-3 !py-2" aria-label="Minhas galinhas">
             <Images size={18} />
           </Link>
@@ -84,37 +91,35 @@ export function Editor() {
         </div>
       </header>
 
-      <main className="flex-1 px-5 py-4 flex items-center justify-center">
-        <div className="papel moldura w-full max-w-sm p-5">
-          <Galinha catalogo={catalogo} escolhas={escolhas} cor={cor} className="w-full" />
+      <main className="flex-1 min-h-0 px-4 pb-2 flex items-center justify-center">
+        <div className="papel moldura h-full max-w-sm p-3 flex items-center justify-center">
+          <Galinha catalogo={catalogo} escolhas={escolhas} cor={cor}
+                   className="h-full max-h-full w-auto" />
         </div>
       </main>
 
-      <div className="px-5 flex flex-wrap gap-2 justify-center pb-3">
+      <div className="px-4 pb-2 flex items-center gap-2 shrink-0">
         <button onClick={() => {
                   const sorteada = sortear(catalogo)
                   registrarAcao('sorteio')
                   registrarConjunto(sorteada, 'escolhas')
                   setEscolhas(sorteada); setSalvo(false)
-                }} className="botao-neutro !py-2.5">
+                }} className="botao-neutro !px-4 !py-2.5 shrink-0">
           <Dices size={18} /> Sortear
         </button>
-        <button onClick={() => { registrarAcao('limpeza'); setEscolhas({}); setSalvo(false) }} disabled={total === 0}
-                className="botao-neutro !py-2.5 disabled:opacity-40">
-          <Eraser size={18} /> Limpar
-        </button>
-        <button onClick={() => { registrarAcao('prova_pele'); setPele(true) }} disabled={total === 0}
-                className="botao-neutro !py-2.5 disabled:opacity-40">
-          <Scan size={18} /> Na pele
-        </button>
-        <button onClick={salvar} disabled={total === 0 || salvando}
-                className="botao-neutro !py-2.5 disabled:opacity-40">
+
+        <AcaoIcone rotulo="Ver na pele" onClick={() => { registrarAcao('prova_pele'); setPele(true) }}
+                   desabilitado={total === 0}>
+          <Scan size={18} />
+        </AcaoIcone>
+        <AcaoIcone rotulo={salvo ? 'Salva' : 'Salvar'} onClick={salvar} desabilitado={total === 0 || salvando}>
           {salvando ? <Loader2 size={18} className="animate-spin" />
             : salvo ? <Check size={18} className="text-brand" /> : <Save size={18} />}
-          {salvo ? 'Salva!' : 'Salvar'}
-        </button>
-        <button onClick={() => setEnviar(true)} disabled={total === 0} className="botao-principal !py-2.5 disabled:opacity-40">
-          <Send size={18} /> Mandar pro Vital
+        </AcaoIcone>
+
+        <button onClick={() => setEnviar(true)} disabled={total === 0}
+                className="botao-principal !px-4 !py-2.5 flex-1 min-w-0 disabled:opacity-40">
+          <Send size={18} /> Mandar
         </button>
       </div>
 
@@ -124,6 +129,18 @@ export function Editor() {
       {pele && <ProvaNaPele catalogo={catalogo} escolhas={escolhas} cor={cor} aoFechar={() => setPele(false)} />}
       {enviar && <EnviarWhatsApp catalogo={catalogo} escolhas={escolhas} cor={cor} aoFechar={() => setEnviar(false)} />}
     </div>
+  )
+}
+
+/** Ação secundária: só ícone, para as cinco ações caberem numa linha. */
+function AcaoIcone({ rotulo, onClick, desabilitado, children }: {
+  rotulo: string; onClick: () => void; desabilitado?: boolean; children: React.ReactNode
+}) {
+  return (
+    <button onClick={onClick} disabled={desabilitado} aria-label={rotulo} title={rotulo}
+            className="botao-neutro !px-3 !py-2.5 shrink-0 disabled:opacity-40">
+      {children}
+    </button>
   )
 }
 
@@ -155,7 +172,7 @@ function MenuDeSlots({ catalogo, escolhas, cor, aberto, aoAbrir, aoEscolher }: M
   const slotAtual = SLOTS.find((s) => s.id === aberto)
 
   return (
-    <nav className="border-t-2 border-ink/10 bg-surface safe-bottom">
+    <nav className="border-t-2 border-ink/10 bg-surface safe-bottom shrink-0">
       {aberto && slotAtual && (
         <div className="animate-sheet-up border-b-2 border-ink/10">
           <div className="flex items-center justify-between px-5 py-3">

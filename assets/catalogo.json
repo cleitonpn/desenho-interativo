@@ -1,0 +1,1024 @@
+{
+  "canvas": {
+    "w": 2480,
+    "h": 3508
+  },
+  "ordem_camadas": [
+    "base",
+    "meias",
+    "sapatos",
+    "roupa_baixo",
+    "roupa_cima",
+    "pescoco",
+    "bolsa",
+    "cabeca",
+    "olhos",
+    "extras"
+  ],
+  "paleta": {
+    "traco": "#FF1A0E",
+    "sombra": "#FF655D"
+  },
+  "pecas": [
+    {
+      "id": "base/corpo",
+      "slot": "base",
+      "arquivo": "assets/base/corpo.png",
+      "x": 656,
+      "y": 1000,
+      "w": 921,
+      "h": 1262,
+      "origem": "Camada_2.png"
+    },
+    {
+      "id": "cabeca/capuz-chapeuzinho",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/capuz-chapeuzinho.png",
+      "x": 1007,
+      "y": 851,
+      "w": 483,
+      "h": 854,
+      "origem": "Camada_3.png"
+    },
+    {
+      "id": "cabeca/moicano-punk",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/moicano-punk.png",
+      "x": 1089,
+      "y": 860,
+      "w": 345,
+      "h": 362,
+      "origem": "Camada_53.png"
+    },
+    {
+      "id": "cabeca/laco-bolinhas",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/laco-bolinhas.png",
+      "x": 1055,
+      "y": 875,
+      "w": 394,
+      "h": 326,
+      "origem": "Da_seleção 1.png"
+    },
+    {
+      "id": "cabeca/chapeu-cowboy",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/chapeu-cowboy.png",
+      "x": 1039,
+      "y": 925,
+      "w": 443,
+      "h": 332,
+      "origem": "Camada_58.png"
+    },
+    {
+      "id": "cabeca/gorro-pompom",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/gorro-pompom.png",
+      "x": 1058,
+      "y": 954,
+      "w": 429,
+      "h": 311,
+      "origem": "Camada_57.png"
+    },
+    {
+      "id": "cabeca/lenco-xadrez",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/lenco-xadrez.png",
+      "x": 1002,
+      "y": 964,
+      "w": 500,
+      "h": 740,
+      "origem": "Camada_77.png"
+    },
+    {
+      "id": "cabeca/lenco-liso",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/lenco-liso.png",
+      "x": 1007,
+      "y": 966,
+      "w": 483,
+      "h": 739,
+      "origem": "Camada_3 1.png"
+    },
+    {
+      "id": "cabeca/gorro-listrado",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/gorro-listrado.png",
+      "x": 1068,
+      "y": 992,
+      "w": 393,
+      "h": 277,
+      "origem": "Camada_53 1.png"
+    },
+    {
+      "id": "cabeca/chapeu-marinheiro",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/chapeu-marinheiro.png",
+      "x": 1120,
+      "y": 993,
+      "w": 347,
+      "h": 213,
+      "origem": "Camada_72.png"
+    },
+    {
+      "id": "cabeca/boina-xadrez",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/boina-xadrez.png",
+      "x": 1093,
+      "y": 1001,
+      "w": 339,
+      "h": 197,
+      "origem": "Camada_80.png"
+    },
+    {
+      "id": "cabeca/bone-coracao",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/bone-coracao.png",
+      "x": 1116,
+      "y": 1006,
+      "w": 394,
+      "h": 194,
+      "origem": "Camada_97.png"
+    },
+    {
+      "id": "cabeca/lacinho-bolinhas",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/lacinho-bolinhas.png",
+      "x": 1097,
+      "y": 1059,
+      "w": 180,
+      "h": 150,
+      "origem": "Camada_102.png"
+    },
+    {
+      "id": "cabeca/capuz-xadrez",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/capuz-xadrez.png",
+      "x": 1012,
+      "y": 1062,
+      "w": 500,
+      "h": 706,
+      "origem": "Camada_28.png"
+    },
+    {
+      "id": "cabeca/lenco-bolinhas",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/lenco-bolinhas.png",
+      "x": 1012,
+      "y": 1062,
+      "w": 500,
+      "h": 706,
+      "origem": "Camada_28 1.png"
+    },
+    {
+      "id": "cabeca/tiara-asas",
+      "slot": "cabeca",
+      "arquivo": "assets/cabeca/tiara-asas.png",
+      "x": 1069,
+      "y": 1062,
+      "w": 459,
+      "h": 229,
+      "origem": "Camada_54.png"
+    },
+    {
+      "id": "olhos/oculos-gatinho",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-gatinho.png",
+      "x": 1072,
+      "y": 1121,
+      "w": 460,
+      "h": 178,
+      "origem": "Camada_10.png"
+    },
+    {
+      "id": "olhos/oculos-gatinho-fino",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-gatinho-fino.png",
+      "x": 1080,
+      "y": 1138,
+      "w": 440,
+      "h": 154,
+      "origem": "Camada_55.png"
+    },
+    {
+      "id": "olhos/oculos-listrado",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-listrado.png",
+      "x": 1133,
+      "y": 1145,
+      "w": 364,
+      "h": 150,
+      "origem": "Camada_4.png"
+    },
+    {
+      "id": "olhos/oculos-escuros",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-escuros.png",
+      "x": 1097,
+      "y": 1149,
+      "w": 411,
+      "h": 152,
+      "origem": "Camada_10 1.png"
+    },
+    {
+      "id": "olhos/oculos-coracao",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-coracao.png",
+      "x": 1158,
+      "y": 1170,
+      "w": 309,
+      "h": 158,
+      "origem": "Camada_26 1.png"
+    },
+    {
+      "id": "olhos/oculos-redondo-blush",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-redondo-blush.png",
+      "x": 1163,
+      "y": 1173,
+      "w": 312,
+      "h": 157,
+      "origem": "Camada_49.png"
+    },
+    {
+      "id": "olhos/oculos-coracao-mini",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-coracao-mini.png",
+      "x": 1190,
+      "y": 1176,
+      "w": 262,
+      "h": 134,
+      "origem": "Camada_26.png"
+    },
+    {
+      "id": "olhos/oculos-mascara",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-mascara.png",
+      "x": 1154,
+      "y": 1185,
+      "w": 312,
+      "h": 177,
+      "origem": "Camada_35.png"
+    },
+    {
+      "id": "olhos/oculos-retangular",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-retangular.png",
+      "x": 1154,
+      "y": 1189,
+      "w": 330,
+      "h": 88,
+      "origem": "Da_seleção.png"
+    },
+    {
+      "id": "olhos/oculos-aviador",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-aviador.png",
+      "x": 1138,
+      "y": 1201,
+      "w": 356,
+      "h": 104,
+      "origem": "Camada_25.png"
+    },
+    {
+      "id": "olhos/oculos-meia-lua",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-meia-lua.png",
+      "x": 1148,
+      "y": 1208,
+      "w": 315,
+      "h": 70,
+      "origem": "Camada_6 1.png"
+    },
+    {
+      "id": "olhos/oculos-corrente",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-corrente.png",
+      "x": 1080,
+      "y": 1208,
+      "w": 394,
+      "h": 214,
+      "origem": "Camada_6.png"
+    },
+    {
+      "id": "olhos/oculos-redondo-mini",
+      "slot": "olhos",
+      "arquivo": "assets/olhos/oculos-redondo-mini.png",
+      "x": 1219,
+      "y": 1214,
+      "w": 225,
+      "h": 97,
+      "origem": "Camada_71.png"
+    },
+    {
+      "id": "extras/item-asa-a-confirmar",
+      "slot": "extras",
+      "arquivo": "assets/extras/item-asa-a-confirmar.png",
+      "x": 542,
+      "y": 1258,
+      "w": 758,
+      "h": 566,
+      "origem": "Camada_62.png"
+    },
+    {
+      "id": "roupa_cima/gola-tricot",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/gola-tricot.png",
+      "x": 1013,
+      "y": 1298,
+      "w": 596,
+      "h": 558,
+      "origem": "Da_seleção 2.png"
+    },
+    {
+      "id": "pescoco/lenco-pescoco",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/lenco-pescoco.png",
+      "x": 1015,
+      "y": 1312,
+      "w": 502,
+      "h": 352,
+      "origem": "Camada_56.png"
+    },
+    {
+      "id": "pescoco/coleira-espinhos",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/coleira-espinhos.png",
+      "x": 967,
+      "y": 1342,
+      "w": 635,
+      "h": 214,
+      "origem": "Camada_63.png"
+    },
+    {
+      "id": "pescoco/gravata-borboleta",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/gravata-borboleta.png",
+      "x": 1216,
+      "y": 1348,
+      "w": 299,
+      "h": 193,
+      "origem": "Camada_86 2.png"
+    },
+    {
+      "id": "pescoco/bandana-xadrez",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/bandana-xadrez.png",
+      "x": 1026,
+      "y": 1348,
+      "w": 501,
+      "h": 281,
+      "origem": "Camada_51.png"
+    },
+    {
+      "id": "pescoco/gravatinha-borboleta",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/gravatinha-borboleta.png",
+      "x": 1216,
+      "y": 1348,
+      "w": 299,
+      "h": 193,
+      "origem": "Camada_86 1.png"
+    },
+    {
+      "id": "pescoco/borboleta-grande",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/borboleta-grande.png",
+      "x": 1216,
+      "y": 1348,
+      "w": 299,
+      "h": 193,
+      "origem": "Camada_86.png"
+    },
+    {
+      "id": "bolsa/alca-tiracolo",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/alca-tiracolo.png",
+      "x": 837,
+      "y": 1354,
+      "w": 327,
+      "h": 563,
+      "origem": "Camada_12 1.png"
+    },
+    {
+      "id": "bolsa/alca-espinhos",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/alca-espinhos.png",
+      "x": 776,
+      "y": 1354,
+      "w": 430,
+      "h": 613,
+      "origem": "Camada_12.png"
+    },
+    {
+      "id": "bolsa/bolsa-flor",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/bolsa-flor.png",
+      "x": 786,
+      "y": 1361,
+      "w": 499,
+      "h": 669,
+      "origem": "Camada_5 1.png"
+    },
+    {
+      "id": "bolsa/faixa-tiracolo",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/faixa-tiracolo.png",
+      "x": 1023,
+      "y": 1371,
+      "w": 486,
+      "h": 495,
+      "origem": "Camada_75.png"
+    },
+    {
+      "id": "bolsa/bolsinha",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/bolsinha.png",
+      "x": 875,
+      "y": 1379,
+      "w": 283,
+      "h": 565,
+      "origem": "Camada_91.png"
+    },
+    {
+      "id": "bolsa/pochete",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/pochete.png",
+      "x": 910,
+      "y": 1379,
+      "w": 320,
+      "h": 530,
+      "origem": "Camada_37.png"
+    },
+    {
+      "id": "bolsa/bolsa-coracao",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/bolsa-coracao.png",
+      "x": 910,
+      "y": 1379,
+      "w": 320,
+      "h": 530,
+      "origem": "Camada_37 1.png"
+    },
+    {
+      "id": "bolsa/bolsa-texturizada",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/bolsa-texturizada.png",
+      "x": 809,
+      "y": 1390,
+      "w": 432,
+      "h": 523,
+      "origem": "Camada_51 1.png"
+    },
+    {
+      "id": "bolsa/bolsa-carteira",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/bolsa-carteira.png",
+      "x": 932,
+      "y": 1399,
+      "w": 584,
+      "h": 541,
+      "origem": "Camada_73 1.png"
+    },
+    {
+      "id": "bolsa/pochete-lisa",
+      "slot": "bolsa",
+      "arquivo": "assets/bolsa/pochete-lisa.png",
+      "x": 932,
+      "y": 1399,
+      "w": 584,
+      "h": 541,
+      "origem": "Camada_73.png"
+    },
+    {
+      "id": "pescoco/colar-perolas",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/colar-perolas.png",
+      "x": 1184,
+      "y": 1403,
+      "w": 316,
+      "h": 133,
+      "origem": "Camada_81.png"
+    },
+    {
+      "id": "roupa_cima/casaco-franjas",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/casaco-franjas.png",
+      "x": 1001,
+      "y": 1406,
+      "w": 596,
+      "h": 488,
+      "origem": "Camada_29.png"
+    },
+    {
+      "id": "roupa_cima/capa-estrela",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/capa-estrela.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Camada_21 4.png"
+    },
+    {
+      "id": "roupa_cima/jaqueta-detalhes",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/jaqueta-detalhes.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Da_seleção 5.png"
+    },
+    {
+      "id": "roupa_cima/blazer",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/blazer.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Camada_21 3.png"
+    },
+    {
+      "id": "roupa_cima/blusa-listrada-coracao",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/blusa-listrada-coracao.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Da_seleção 3.png"
+    },
+    {
+      "id": "roupa_cima/casaco-franja",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/casaco-franja.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Da_seleção 6.png"
+    },
+    {
+      "id": "roupa_cima/casaco-bolso",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/casaco-bolso.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Camada_21 1.png"
+    },
+    {
+      "id": "roupa_cima/capa-estrela-cheia",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/capa-estrela-cheia.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Camada_21 5.png"
+    },
+    {
+      "id": "roupa_cima/blusa-granulada",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/blusa-granulada.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Camada_21 2.png"
+    },
+    {
+      "id": "roupa_cima/camiseta-banda",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/camiseta-banda.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Da_seleção 4.png"
+    },
+    {
+      "id": "roupa_cima/blusa-listrada",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/blusa-listrada.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Camada_21.png"
+    },
+    {
+      "id": "roupa_cima/camiseta-caveira",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/camiseta-caveira.png",
+      "x": 1013,
+      "y": 1408,
+      "w": 596,
+      "h": 448,
+      "origem": "Camada_21 6.png"
+    },
+    {
+      "id": "roupa_cima/jaqueta-lisa",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/jaqueta-lisa.png",
+      "x": 1014,
+      "y": 1410,
+      "w": 597,
+      "h": 445,
+      "origem": "Camada_85.png"
+    },
+    {
+      "id": "roupa_cima/blazer-aberto",
+      "slot": "roupa_cima",
+      "arquivo": "assets/roupa_cima/blazer-aberto.png",
+      "x": 1014,
+      "y": 1410,
+      "w": 597,
+      "h": 445,
+      "origem": "Camada_85 1.png"
+    },
+    {
+      "id": "pescoco/colar-micangas",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/colar-micangas.png",
+      "x": 1172,
+      "y": 1423,
+      "w": 296,
+      "h": 126,
+      "origem": "Camada_39.png"
+    },
+    {
+      "id": "pescoco/gravata-lisa",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/gravata-lisa.png",
+      "x": 1333,
+      "y": 1453,
+      "w": 163,
+      "h": 400,
+      "origem": "Camada_82 1.png"
+    },
+    {
+      "id": "pescoco/gravata-listrada",
+      "slot": "pescoco",
+      "arquivo": "assets/pescoco/gravata-listrada.png",
+      "x": 1333,
+      "y": 1453,
+      "w": 163,
+      "h": 400,
+      "origem": "Camada_82.png"
+    },
+    {
+      "id": "extras/skate",
+      "slot": "extras",
+      "arquivo": "assets/extras/skate.png",
+      "x": 665,
+      "y": 1469,
+      "w": 604,
+      "h": 471,
+      "origem": "Camada_50.png"
+    },
+    {
+      "id": "roupa_baixo/tutu-plissado",
+      "slot": "roupa_baixo",
+      "arquivo": "assets/roupa_baixo/tutu-plissado.png",
+      "x": 575,
+      "y": 1566,
+      "w": 1102,
+      "h": 401,
+      "origem": "Camada_40.png"
+    },
+    {
+      "id": "roupa_baixo/tutu-cheio",
+      "slot": "roupa_baixo",
+      "arquivo": "assets/roupa_baixo/tutu-cheio.png",
+      "x": 575,
+      "y": 1566,
+      "w": 1102,
+      "h": 401,
+      "origem": "Camada_40 1.png"
+    },
+    {
+      "id": "roupa_baixo/saia-simples",
+      "slot": "roupa_baixo",
+      "arquivo": "assets/roupa_baixo/saia-simples.png",
+      "x": 575,
+      "y": 1566,
+      "w": 1102,
+      "h": 401,
+      "origem": "Camada_40 3.png"
+    },
+    {
+      "id": "roupa_baixo/saia-oncinha",
+      "slot": "roupa_baixo",
+      "arquivo": "assets/roupa_baixo/saia-oncinha.png",
+      "x": 575,
+      "y": 1566,
+      "w": 1102,
+      "h": 401,
+      "origem": "Camada_40 4.png"
+    },
+    {
+      "id": "roupa_baixo/saia-bolinhas",
+      "slot": "roupa_baixo",
+      "arquivo": "assets/roupa_baixo/saia-bolinhas.png",
+      "x": 575,
+      "y": 1566,
+      "w": 1102,
+      "h": 401,
+      "origem": "Camada_40 5.png"
+    },
+    {
+      "id": "roupa_baixo/saia-xadrez",
+      "slot": "roupa_baixo",
+      "arquivo": "assets/roupa_baixo/saia-xadrez.png",
+      "x": 575,
+      "y": 1566,
+      "w": 1102,
+      "h": 401,
+      "origem": "Camada_40 2.png"
+    },
+    {
+      "id": "roupa_baixo/shorts-xadrez",
+      "slot": "roupa_baixo",
+      "arquivo": "assets/roupa_baixo/shorts-xadrez.png",
+      "x": 1054,
+      "y": 1611,
+      "w": 588,
+      "h": 413,
+      "origem": "Camada_99.png"
+    },
+    {
+      "id": "extras/pingente-a-confirmar",
+      "slot": "extras",
+      "arquivo": "assets/extras/pingente-a-confirmar.png",
+      "x": 1039,
+      "y": 1740,
+      "w": 295,
+      "h": 191,
+      "origem": "Camada_100.png"
+    },
+    {
+      "id": "sapatos/bota-country",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/bota-country.png",
+      "x": 987,
+      "y": 1985,
+      "w": 379,
+      "h": 288,
+      "origem": "Camada_18 1.png"
+    },
+    {
+      "id": "sapatos/bota-country-cheia",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/bota-country-cheia.png",
+      "x": 987,
+      "y": 1985,
+      "w": 379,
+      "h": 288,
+      "origem": "Camada_18.png"
+    },
+    {
+      "id": "meias/meia-soquete",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-soquete.png",
+      "x": 1006,
+      "y": 2006,
+      "w": 345,
+      "h": 260,
+      "origem": "Camada_44 1.png"
+    },
+    {
+      "id": "meias/meia-listrada",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-listrada.png",
+      "x": 1006,
+      "y": 2006,
+      "w": 345,
+      "h": 260,
+      "origem": "Camada_44.png"
+    },
+    {
+      "id": "sapatos/coturno-spikes",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/coturno-spikes.png",
+      "x": 958,
+      "y": 2007,
+      "w": 473,
+      "h": 301,
+      "origem": "galinha.png"
+    },
+    {
+      "id": "sapatos/bota-cano-alto",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/bota-cano-alto.png",
+      "x": 1003,
+      "y": 2007,
+      "w": 359,
+      "h": 301,
+      "origem": "Camada_29 1.png"
+    },
+    {
+      "id": "meias/meia-laco",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-laco.png",
+      "x": 1004,
+      "y": 2008,
+      "w": 349,
+      "h": 257,
+      "origem": "Camada_20 2.png"
+    },
+    {
+      "id": "meias/meia-sapatilha",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-sapatilha.png",
+      "x": 1015,
+      "y": 2014,
+      "w": 334,
+      "h": 250,
+      "origem": "Camada_21 7.png"
+    },
+    {
+      "id": "meias/meia-curta",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-curta.png",
+      "x": 1015,
+      "y": 2014,
+      "w": 334,
+      "h": 250,
+      "origem": "Camada_21 9.png"
+    },
+    {
+      "id": "meias/meia-estrela",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-estrela.png",
+      "x": 1015,
+      "y": 2014,
+      "w": 334,
+      "h": 250,
+      "origem": "Camada_21 8.png"
+    },
+    {
+      "id": "meias/meia-listrada-2",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-listrada-2.png",
+      "x": 1015,
+      "y": 2014,
+      "w": 334,
+      "h": 250,
+      "origem": "Camada_21 10.png"
+    },
+    {
+      "id": "meias/meia-bolinhas",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-bolinhas.png",
+      "x": 1015,
+      "y": 2015,
+      "w": 332,
+      "h": 250,
+      "origem": "Camada_61.png"
+    },
+    {
+      "id": "meias/meia-lisa",
+      "slot": "meias",
+      "arquivo": "assets/meias/meia-lisa.png",
+      "x": 1015,
+      "y": 2015,
+      "w": 332,
+      "h": 250,
+      "origem": "Camada_61 1.png"
+    },
+    {
+      "id": "sapatos/bota-lisa",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/bota-lisa.png",
+      "x": 1002,
+      "y": 2044,
+      "w": 361,
+      "h": 227,
+      "origem": "Camada_7 1.png"
+    },
+    {
+      "id": "sapatos/bota-country-vazada",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/bota-country-vazada.png",
+      "x": 1002,
+      "y": 2044,
+      "w": 361,
+      "h": 227,
+      "origem": "Camada_7.png"
+    },
+    {
+      "id": "sapatos/sapatilha-ballet",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/sapatilha-ballet.png",
+      "x": 987,
+      "y": 2055,
+      "w": 368,
+      "h": 407,
+      "origem": "Da_seleção 7.png"
+    },
+    {
+      "id": "sapatos/sapatilha-ballet-fina",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/sapatilha-ballet-fina.png",
+      "x": 987,
+      "y": 2055,
+      "w": 368,
+      "h": 407,
+      "origem": "Da_seleção 8.png"
+    },
+    {
+      "id": "sapatos/pantufa-coelho",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/pantufa-coelho.png",
+      "x": 963,
+      "y": 2059,
+      "w": 418,
+      "h": 257,
+      "origem": "Camada_59.png"
+    },
+    {
+      "id": "sapatos/tenis",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/tenis.png",
+      "x": 1004,
+      "y": 2109,
+      "w": 354,
+      "h": 165,
+      "origem": "Camada_47.png"
+    },
+    {
+      "id": "sapatos/scarpin",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/scarpin.png",
+      "x": 980,
+      "y": 2113,
+      "w": 395,
+      "h": 170,
+      "origem": "Camada_67.png"
+    },
+    {
+      "id": "sapatos/salto-cheio",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/salto-cheio.png",
+      "x": 1010,
+      "y": 2114,
+      "w": 341,
+      "h": 219,
+      "origem": "Camada_20.png"
+    },
+    {
+      "id": "sapatos/sandalia-salto",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/sandalia-salto.png",
+      "x": 1011,
+      "y": 2115,
+      "w": 344,
+      "h": 218,
+      "origem": "Camada_20 1.png"
+    },
+    {
+      "id": "sapatos/sapato-social",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/sapato-social.png",
+      "x": 986,
+      "y": 2119,
+      "w": 386,
+      "h": 166,
+      "origem": "Camada_67 1.png"
+    },
+    {
+      "id": "sapatos/chinelo",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/chinelo.png",
+      "x": 963,
+      "y": 2119,
+      "w": 418,
+      "h": 197,
+      "origem": "Camada_59 1.png"
+    },
+    {
+      "id": "sapatos/tenis-plataforma",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/tenis-plataforma.png",
+      "x": 1005,
+      "y": 2121,
+      "w": 352,
+      "h": 149,
+      "origem": "Camada_46.png"
+    },
+    {
+      "id": "sapatos/sandalia-rasteira",
+      "slot": "sapatos",
+      "arquivo": "assets/sapatos/sandalia-rasteira.png",
+      "x": 970,
+      "y": 2128,
+      "w": 399,
+      "h": 191,
+      "origem": "Camada_65.png"
+    }
+  ]
+}

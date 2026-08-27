@@ -1,4 +1,5 @@
 import type { Catalogo, Peca, SlotId } from './tipos'
+import { listarPecasRemotas } from './pecasRemotas'
 
 /** Ordem em que os slots aparecem no menu do editor. */
 export const SLOTS: { id: SlotId; rotulo: string; emoji: string }[] = [
@@ -15,15 +16,33 @@ export const SLOTS: { id: SlotId; rotulo: string; emoji: string }[] = [
 
 let cache: Catalogo | null = null
 
+/**
+ * O catálogo tem duas origens: o arquivo estático, com as peças que vieram do
+ * PSD, e o Firestore, com as que o Vital subiu pelo painel. Uma peça do painel
+ * com o mesmo id substitui a estática, o que permite corrigir uma sem deploy.
+ */
 export async function carregarCatalogo(): Promise<Catalogo> {
   if (cache) return cache
   const resp = await fetch(`${import.meta.env.BASE_URL}pecas/catalogo.json`)
   if (!resp.ok) throw new Error('Não consegui carregar o catálogo de peças.')
-  cache = (await resp.json()) as Catalogo
+  const base = (await resp.json()) as Catalogo
+
+  const remotas = await listarPecasRemotas()
+  const porId = new Map(base.pecas.map((p) => [p.id, p]))
+  for (const r of remotas) porId.set(r.id, r)
+
+  cache = { ...base, pecas: [...porId.values()] }
   return cache
 }
 
+/** Força a próxima leitura a buscar de novo — usado após publicar uma peça. */
+export function limparCacheDoCatalogo(): void {
+  cache = null
+}
+
 export function caminhoDaPeca(peca: Peca): string {
+  // Peças do painel já guardam a URL completa do Storage.
+  if (peca.arquivo.startsWith('http')) return peca.arquivo
   return `${import.meta.env.BASE_URL}${peca.arquivo}`
 }
 

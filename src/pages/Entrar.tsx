@@ -148,11 +148,23 @@ function traduzir(err: unknown): string {
   const codigo = (err as { code?: string })?.code ?? ''
   const mapa: Record<string, string> = {
     'auth/invalid-credential': 'E-mail ou senha não conferem.',
+    'auth/user-not-found': 'Não achei conta com esse e-mail. Crie uma abaixo.',
+    'auth/wrong-password': 'Senha incorreta.',
     'auth/invalid-email': 'Esse e-mail não parece válido.',
     'auth/weak-password': 'A senha precisa de pelo menos 6 caracteres.',
     'auth/email-already-in-use': 'Já existe conta com esse e-mail. Tente entrar.',
     'auth/popup-closed-by-user': 'A janela do Google foi fechada antes de terminar.',
+    'auth/popup-blocked': 'O navegador bloqueou a janela do Google. Libere os pop-ups e tente de novo.',
     'auth/network-request-failed': 'Sem conexão. Verifique a internet e tente de novo.',
+    'auth/too-many-requests': 'Muitas tentativas seguidas. Espere um minuto.',
+    // Estes dois são configuração do projeto, não erro de quem está entrando:
+    // dizer isso por extenso evita horas procurando no lugar errado.
+    'auth/unauthorized-domain': `O Firebase ainda não libera login em ${location.hostname}. `
+      + 'No console: Authentication → Settings → Domínios autorizados → adicionar este domínio.',
+    'auth/operation-not-allowed': 'Esse jeito de entrar não está habilitado no Firebase '
+      + '(Authentication → Sign-in method).',
   }
-  return mapa[codigo] ?? 'Não deu certo agora. Tente de novo em instantes.'
+  if (mapa[codigo]) return mapa[codigo]
+  // Sem o código na tela, um erro de configuração vira adivinhação.
+  return codigo ? `Não deu certo: ${codigo}` : 'Não deu certo agora. Tente de novo em instantes.'
 }

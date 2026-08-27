@@ -20,6 +20,13 @@ service cloud.firestore {
       allow delete: if ehAdmin();
     }
 
+    // Acessorios que o Vital sobe pelo painel. Todo mundo precisa ler para
+    // montar a galinha; so o Vital escreve.
+    match /pecas/{id} {
+      allow read: if true;
+      allow write: if ehAdmin();
+    }
+
     // Criacoes publicas alimentam a vitrine da abertura, entao sao legiveis
     // por qualquer um — inclusive por quem ainda nao entrou.
     match /criacoes/{id} {

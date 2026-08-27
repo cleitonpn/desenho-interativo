@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { FiltrosSvg } from './components/FiltrosSvg'
 import { Abertura } from './pages/Abertura'
 import { Entrar } from './pages/Entrar'
 import { Tutorial } from './pages/Tutorial'
@@ -12,6 +13,7 @@ import type { ReactNode } from 'react'
 export default function App() {
   return (
     <AuthProvider>
+      <FiltrosSvg />
       <Routes>
         <Route path="/" element={<SoVisitante><Abertura /></SoVisitante>} />
         <Route path="/entrar" element={<SoVisitante><Entrar /></SoVisitante>} />

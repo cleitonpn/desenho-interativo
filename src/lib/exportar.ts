@@ -1,4 +1,4 @@
-import { CORES, MARCA, type CorId } from '../config/marca'
+import { CORES, LUMINANCIA, MARCA, curvaPreto, type CorId } from '../config/marca'
 import { caminhoDaPeca } from './catalogo'
 import { camadasEmOrdem } from './composicao'
 import type { Catalogo, Escolhas } from './tipos'
@@ -68,23 +68,42 @@ export async function renderizar(
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
 
-  ctx.filter = CORES[cor].filtro
   for (const peca of camadas) {
     const img = await carregarImagem(caminhoDaPeca(peca))
     ctx.drawImage(img, (peca.x - cx) * escala, (peca.y - cy) * escala, peca.w * escala, peca.h * escala)
   }
-  ctx.filter = 'none'
+
+  // A conversao para preto e feita pixel a pixel, e nao por ctx.filter, porque
+  // filtro por url() nao e confiavel fora do Chrome — e esta e a imagem que a
+  // pessoa leva para tatuar.
+  if (cor === 'preto') aplicarPreto(ctx, canvas.width, canvas.height)
 
   if (!semAssinatura) {
     const tamanho = Math.round(rodape * escala * 0.32)
     ctx.font = `600 ${tamanho}px Inter, system-ui, sans-serif`
-    ctx.fillStyle = cor === 'preto' ? '#191919' : CORES.vermelho.amostra
+    ctx.fillStyle = CORES[cor].amostra
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(MARCA.arroba, canvas.width / 2, canvas.height - (rodape * escala) / 2)
   }
 
   return canvas
+}
+
+/**
+ * Mesma curva do filtro da tela, aplicada no bitmap. Roda uma vez por
+ * exportacao, entao o custo nao aparece.
+ */
+function aplicarPreto(ctx: CanvasRenderingContext2D, largura: number, altura: number): void {
+  const dados = ctx.getImageData(0, 0, largura, altura)
+  const px = dados.data
+  for (let i = 0; i < px.length; i += 4) {
+    if (px[i + 3] === 0) continue
+    const lum = px[i] * LUMINANCIA.r + px[i + 1] * LUMINANCIA.g + px[i + 2] * LUMINANCIA.b
+    const v = curvaPreto(lum)
+    px[i] = px[i + 1] = px[i + 2] = v
+  }
+  ctx.putImageData(dados, 0, 0)
 }
 
 export function canvasParaBlob(canvas: HTMLCanvasElement): Promise<Blob> {

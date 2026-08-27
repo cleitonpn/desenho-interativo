@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { ArrowLeft, Download, Loader2, Users } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { db } from '../../lib/firebase'
 import { Galinha } from '../../components/Galinha'
-import { SLOTS, carregarCatalogo, caminhoDaPeca, pecasDoSlot } from '../../lib/catalogo'
+import { SLOTS, carregarCatalogo, caminhoDaPeca, limparCacheDoCatalogo, pecasDoSlot } from '../../lib/catalogo'
+import { removerPecaRemota, renomearPecaRemota, type PecaRemota } from '../../lib/pecasRemotas'
+import { SubirPeca } from '../../components/SubirPeca'
 import { CORES } from '../../config/marca'
-import type { Catalogo, Criacao, Perfil } from '../../lib/tipos'
+import type { Catalogo, Criacao, Peca, Perfil } from '../../lib/tipos'
 
 type Aba = 'mailing' | 'criacoes' | 'pecas'
 
@@ -49,7 +51,7 @@ export function Admin() {
 
       {aba === 'mailing' && <AbaMailing perfis={perfis} />}
       {aba === 'criacoes' && <AbaCriacoes criacoes={criacoes} catalogo={catalogo} />}
-      {aba === 'pecas' && <AbaPecas catalogo={catalogo} />}
+      {aba === 'pecas' && <AbaPecas catalogo={catalogo} aoMudar={setCatalogo} />}
     </div>
   )
 }
@@ -127,14 +129,29 @@ function AbaCriacoes({ criacoes, catalogo }: { criacoes: Criacao[] | null; catal
   )
 }
 
-function AbaPecas({ catalogo }: { catalogo: Catalogo | null }) {
+function AbaPecas({ catalogo, aoMudar }: { catalogo: Catalogo | null; aoMudar: (c: Catalogo) => void }) {
+  const [subindo, setSubindo] = useState(false)
+
   if (!catalogo) return <Carregando />
+
+  /** Recarrega do zero para a peça nova já aparecer no editor e aqui. */
+  async function recarregar() {
+    limparCacheDoCatalogo()
+    aoMudar(await carregarCatalogo())
+  }
+
   return (
     <div className="space-y-7">
-      <p className="text-muted text-sm">
-        {catalogo.pecas.length - 1} acessórios no ar. Confira se algum nome está trocado —
-        os que ficaram como <em>a confirmar</em> eu não consegui identificar sozinho.
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-muted text-sm max-w-lg">
+          {catalogo.pecas.length - 1} acessórios no ar. Os marcados como
+          <em> a confirmar</em> eu não consegui identificar sozinho — vale renomear.
+        </p>
+        <button onClick={() => setSubindo(true)} className="botao-principal !py-2 !px-4 text-sm shrink-0">
+          <Plus size={16} /> Nova peça
+        </button>
+      </div>
+
       {SLOTS.map((slot) => {
         const pecas = pecasDoSlot(catalogo, slot.id)
         if (!pecas.length) return null
@@ -142,23 +159,68 @@ function AbaPecas({ catalogo }: { catalogo: Catalogo | null }) {
           <section key={slot.id}>
             <h2 className="etiqueta mb-3">{slot.emoji} {slot.rotulo} · {pecas.length}</h2>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-              {pecas.map((p) => (
-                <figure key={p.id} className="moldura-sutil p-2">
-                  <div className="h-16 grid place-items-center">
-                    <img src={caminhoDaPeca(p)} alt="" className="max-h-16 max-w-full object-contain"
-                         style={{ filter: CORES.vermelho.filtro }} />
-                  </div>
-                  <figcaption className="text-[10px] text-center text-muted mt-1.5 leading-tight">
-                    {p.rotulo}
-                    <span className="block text-faint mt-0.5">{p.origem.replace('.png', '')}</span>
-                  </figcaption>
-                </figure>
-              ))}
+              {pecas.map((p) => <CartaoPeca key={p.id} peca={p} aoMudar={recarregar} />)}
             </div>
           </section>
         )
       })}
+
+      {subindo && (
+        <SubirPeca catalogo={catalogo} aoFechar={() => setSubindo(false)}
+                   aoPublicar={async () => { setSubindo(false); await recarregar() }} />
+      )}
     </div>
+  )
+}
+
+/** Peças do PSD só podem ser vistas; as que vieram do painel podem ser
+ *  renomeadas e apagadas, porque moram no Firestore. */
+function CartaoPeca({ peca, aoMudar }: { peca: Peca; aoMudar: () => Promise<void> }) {
+  const remota = 'caminhoStorage' in peca ? (peca as PecaRemota) : null
+  const [editando, setEditando] = useState(false)
+  const [nome, setNome] = useState(peca.rotulo ?? '')
+
+  async function salvar() {
+    if (!remota || !nome.trim()) return
+    await renomearPecaRemota(remota, nome.trim())
+    setEditando(false)
+    await aoMudar()
+  }
+
+  async function apagar() {
+    if (!remota) return
+    if (!confirm(`Apagar "${peca.rotulo}"? Isso não volta atrás.`)) return
+    await removerPecaRemota(remota)
+    await aoMudar()
+  }
+
+  return (
+    <figure className="moldura-sutil p-2 relative group">
+      <div className="h-16 grid place-items-center">
+        <img src={caminhoDaPeca(peca)} alt="" className="max-h-16 max-w-full object-contain"
+             style={{ filter: CORES.vermelho.filtro }} />
+      </div>
+      {editando ? (
+        <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)}
+               onBlur={salvar} onKeyDown={(e) => e.key === 'Enter' && salvar()}
+               className="w-full text-[10px] text-center border-b-2 border-brand bg-transparent mt-1.5 outline-none" />
+      ) : (
+        <figcaption className="text-[10px] text-center text-muted mt-1.5 leading-tight">
+          {peca.rotulo}
+          <span className="block text-faint mt-0.5">{peca.origem.replace('.png', '')}</span>
+        </figcaption>
+      )}
+      {remota && !editando && (
+        <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => setEditando(true)} className="p-1 rounded bg-surface border border-line text-muted hover:text-ink" aria-label="Renomear">
+            <Pencil size={11} />
+          </button>
+          <button onClick={apagar} className="p-1 rounded bg-surface border border-line text-muted hover:text-brand" aria-label="Apagar">
+            <Trash2 size={11} />
+          </button>
+        </div>
+      )}
+    </figure>
   )
 }
 

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Lightbulb, Loader2, TrendingDown, Eye } from 'lucide-react'
-import { carregarAnalise, formatarDuracao, type Analise, type Dica, type PecaComTaxas } from '../../lib/analise'
+import {
+  carregarAnalise, formatarDuracao,
+  type Analise, type Confianca, type Dica, type PecaComTaxas,
+} from '../../lib/analise'
 import type { Catalogo } from '../../lib/tipos'
 
 /**
@@ -24,18 +27,12 @@ export function AbaGente({ catalogo }: { catalogo: Catalogo | null }) {
   if (erro) return <p className="moldura-sutil p-6 text-brand font-medium">{erro}</p>
   if (!analise) return <div className="grid place-items-center py-20 text-muted"><Loader2 className="animate-spin" /></div>
 
-  const { comportamento: c, pecas, slots, ignoradas, dicas, dadosSuficientes } = analise
+  const { comportamento: c, pecas, slots, ignoradas, dicas, confianca } = analise
   const totalMontagens = c.sorteios + c.escolhasManuais
 
   return (
     <div className="space-y-10">
-      {!dadosSuficientes && (
-        <p className="moldura-sutil p-4 text-sm text-muted leading-relaxed">
-          <strong className="text-ink">Ainda são poucas visitas ({c.sessoes}).</strong> Os
-          números abaixo já contam, mas as dicas só aparecem a partir de 15 —
-          antes disso qualquer conclusão seria chute com cara de dado.
-        </p>
-      )}
+      <AvisoDeConfianca confianca={confianca} sessoes={c.sessoes} />
 
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Numero valor={String(c.sessoes)} rotulo="visitas" />
@@ -120,6 +117,31 @@ export function AbaGente({ catalogo }: { catalogo: Catalogo | null }) {
         </p>
       </section>
     </div>
+  )
+}
+
+/**
+ * O painel liga cedo, para haver o que olhar durante os primeiros testes — mas
+ * dizer em que pé está evita que uma coincidência de cinco visitas vire decisão
+ * de desenho. O aviso some sozinho quando o volume o dispensa.
+ */
+function AvisoDeConfianca({ confianca, sessoes }: { confianca: Confianca; sessoes: number }) {
+  if (confianca === 'firme') return null
+  const texto: Record<Exclude<Confianca, 'firme'>, string> = {
+    insuficiente: `Com ${sessoes} ${sessoes === 1 ? 'visita' : 'visitas'} ainda não dá para `
+      + 'sugerir nada. Os números abaixo já contam o que aconteceu; as dicas aparecem a partir de 4.',
+    testando: `${sessoes} visitas — dá para ver o app funcionando, mas trate as dicas como `
+      + 'curiosidade, não como direção. Uma pessoa animada mexe o ranking inteiro nesse volume.',
+    preliminar: `${sessoes} visitas. Já dá para ver tendência, mas as pontas do ranking `
+      + 'ainda mudam. Vale conferir de novo antes de desenhar uma leva inteira.',
+  }
+  return (
+    <p className="moldura-sutil p-4 text-sm text-muted leading-relaxed">
+      <strong className="text-ink">
+        {confianca === 'insuficiente' ? 'Ainda sem base' : confianca === 'testando' ? 'Fase de teste' : 'Tendência inicial'}.
+      </strong>{' '}
+      {texto[confianca]}
+    </p>
   )
 }
 

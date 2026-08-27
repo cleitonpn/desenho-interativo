@@ -58,12 +58,26 @@ export interface Analise {
   slots: ResumoSlot[]
   ignoradas: PecaComTaxas[]
   dicas: Dica[]
-  /** Abaixo disso os números são ruído e o painel diz isso. */
-  dadosSuficientes: boolean
+  /** O quanto dá para confiar no que está na tela, dado o volume. */
+  confianca: Confianca
 }
 
-const MINIMO_SESSOES = 15
-const MINIMO_ESCOLHAS_PECA = 8
+/**
+ * As dicas aparecem cedo, para dar o que olhar enquanto a ferramenta e
+ * mostrada para as primeiras pessoas — mas o painel diz em que pe esta, para
+ * que uma coincidencia de quatro visitas nao vire decisao de desenho.
+ */
+export type Confianca = 'insuficiente' | 'testando' | 'preliminar' | 'firme'
+
+const MINIMO_SESSOES = 4
+const MINIMO_ESCOLHAS_PECA = 3
+
+export function medirConfianca(sessoes: number): Confianca {
+  if (sessoes < MINIMO_SESSOES) return 'insuficiente'
+  if (sessoes < 15) return 'testando'
+  if (sessoes < 40) return 'preliminar'
+  return 'firme'
+}
 
 export async function carregarAnalise(catalogo: Catalogo): Promise<Analise> {
   const [metricasSnap, sessoesSnap] = await Promise.all([
@@ -124,14 +138,14 @@ export async function carregarAnalise(catalogo: Catalogo): Promise<Analise> {
     }
   }).sort((a, b) => b.apetite - a.apetite)
 
-  const dadosSuficientes = c.sessoes >= MINIMO_SESSOES
+  const confianca = medirConfianca(c.sessoes)
   return {
     comportamento: c,
     pecas,
     slots,
     ignoradas: pecas.filter((p) => p.escolhas === 0),
-    dicas: dadosSuficientes ? gerarDicas(pecas, slots, c, visiveis) : [],
-    dadosSuficientes,
+    dicas: confianca === 'insuficiente' ? [] : gerarDicas(pecas, slots, c, visiveis),
+    confianca,
   }
 }
 
@@ -149,7 +163,7 @@ function gerarDicas(
   // 1. Categoria com muita procura para o tamanho que tem.
   const apetiteMedio = slots.reduce((t, s) => t + s.apetite, 0) / (slots.length || 1)
   for (const s of slots.slice(0, 2)) {
-    if (s.apetite > apetiteMedio * 1.4 && s.escolhas > 20) {
+    if (s.apetite > apetiteMedio * 1.4 && s.escolhas >= 6) {
       dicas.push({
         tipo: 'fazer',
         titulo: `Mais ${s.rotulo.toLowerCase()}`,
@@ -190,7 +204,7 @@ function gerarDicas(
 
   // 4. O que ninguém escolhe.
   const ignoradas = pecas.filter((p) => p.escolhas === 0)
-  if (ignoradas.length >= 3 && c.sessoes >= 30) {
+  if (ignoradas.length >= 3 && c.sessoes >= 8) {
     dicas.push({
       tipo: 'rever',
       titulo: `${ignoradas.length} peças sem nenhuma escolha`,
@@ -203,7 +217,7 @@ function gerarDicas(
 
   // 5. Como a galera navega: sorteio é exploração, escolha é intenção.
   const totalAcoes = c.sorteios + c.escolhasManuais
-  if (totalAcoes > 50) {
+  if (totalAcoes >= 12) {
     const fracaoSorteio = c.sorteios / totalAcoes
     if (fracaoSorteio > 0.6) {
       dicas.push({
@@ -224,7 +238,7 @@ function gerarDicas(
   }
 
   // 6. Muita montagem e pouca entrega: o desenho não está virando conversa.
-  if (c.salvamentos > 20 && c.levadas / c.salvamentos < 0.25) {
+  if (c.salvamentos >= 6 && c.levadas / c.salvamentos < 0.25) {
     dicas.push({
       tipo: 'observar',
       titulo: 'Salvam, mas não te mandam',

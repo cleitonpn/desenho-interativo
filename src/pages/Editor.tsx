@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Dices, Eraser, Images, Loader2, Save, Scan, Send, X } from 'lucide-react'
+import { Check, Dices, Eraser, Images, Loader2, Save, Scan, Send, UserRound, X } from 'lucide-react'
 import { CORES, MARCA, type CorId } from '../config/marca'
 import { Galinha } from '../components/Galinha'
 import { ProvaNaPele } from '../components/ProvaNaPele'
@@ -63,6 +63,9 @@ export function Editor() {
           <SeletorDeCor cor={cor} aoTrocar={setCor} />
           <Link to="/minhas" className="botao-neutro !px-3 !py-2" aria-label="Minhas galinhas">
             <Images size={18} />
+          </Link>
+          <Link to="/conta" className="botao-neutro !px-3 !py-2" aria-label="Minha conta">
+            <UserRound size={18} />
           </Link>
         </div>
       </header>

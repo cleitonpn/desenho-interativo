@@ -2,15 +2,16 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { MARCA } from '../config/marca'
+import { CamposDoCadastro } from '../components/CamposDoCadastro'
 import { useAuth, type DadosCadastro } from '../contexts/AuthContext'
 
-type Modo = 'entrar' | 'criar' | 'completar'
+type Modo = 'entrar' | 'criar'
 
-const VAZIO: DadosCadastro = { nome: '', whatsapp: '', cidade: '', nascimento: '', jaFezArte: false }
+const VAZIO: DadosCadastro = { nome: '', whatsapp: '', cidade: '', nascimento: '', jaFezArte: null }
 
 export function Entrar() {
   const navegar = useNavigate()
-  const { entrarComEmail, criarConta, entrarComGoogle, completarPerfil } = useAuth()
+  const { entrarComEmail, criarConta, entrarComGoogle } = useAuth()
   const [modo, setModo] = useState<Modo>('entrar')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
@@ -18,21 +19,18 @@ export function Entrar() {
   const [erro, setErro] = useState('')
   const [ocupado, setOcupado] = useState(false)
 
-  function campo<K extends keyof DadosCadastro>(k: K, v: DadosCadastro[K]) {
-    setDados((d) => ({ ...d, [k]: v }))
-  }
+  const criando = modo === 'criar'
+  const faltaResponder = criando && dados.jaFezArte === null
 
   async function enviar(e: FormEvent) {
     e.preventDefault()
     setErro(''); setOcupado(true)
     try {
-      if (modo === 'entrar') await entrarComEmail(email, senha)
-      else if (modo === 'criar') await criarConta(email, senha, dados)
-      else await completarPerfil(dados)
+      if (criando) await criarConta(email, senha, dados)
+      else await entrarComEmail(email, senha)
       navegar('/tutorial')
     } catch (err) {
       setErro(traduzir(err))
-    } finally {
       setOcupado(false)
     }
   }
@@ -40,17 +38,14 @@ export function Entrar() {
   async function google() {
     setErro(''); setOcupado(true)
     try {
-      const completo = await entrarComGoogle()
-      if (completo) navegar('/tutorial')
-      else setModo('completar')
+      // Sem perfil, o roteador leva para /completar — o Google devolve só nome
+      // e e-mail, e o resto do cadastro ainda precisa ser preenchido.
+      navegar((await entrarComGoogle()) ? '/tutorial' : '/completar')
     } catch (err) {
       setErro(traduzir(err))
-    } finally {
       setOcupado(false)
     }
   }
-
-  const pedeDados = modo === 'criar' || modo === 'completar'
 
   return (
     <div className="min-h-dvh px-6 py-8 safe-top safe-bottom">
@@ -60,85 +55,43 @@ export function Entrar() {
 
       <div className="max-w-sm mx-auto mt-8">
         <p className="etiqueta">{MARCA.nomeCompleto}</p>
-        <h1 className="font-display text-4xl mt-2 mb-1">
-          {modo === 'entrar' ? 'Entrar' : modo === 'criar' ? 'Criar conta' : 'Só mais uma coisa'}
-        </h1>
-        <p className="text-muted text-sm mb-7">
-          {modo === 'completar'
-            ? 'Para o Vital saber quem fez o desenho e falar com você depois.'
-            : 'Sua conta guarda as galinhas que você montar.'}
-        </p>
+        <h1 className="font-display text-4xl mt-2 mb-1">{criando ? 'Criar conta' : 'Entrar'}</h1>
+        <p className="text-muted text-sm mb-7">Sua conta guarda as galinhas que você montar.</p>
 
         <form onSubmit={enviar} className="space-y-3">
-          {modo !== 'completar' && (
-            <>
-              <input className="campo" type="email" required placeholder="E-mail" autoComplete="email"
-                     value={email} onChange={(e) => setEmail(e.target.value)} />
-              <input className="campo" type="password" required minLength={6} placeholder="Senha"
-                     autoComplete={modo === 'criar' ? 'new-password' : 'current-password'}
-                     value={senha} onChange={(e) => setSenha(e.target.value)} />
-            </>
-          )}
+          <input className="campo" type="email" required placeholder="E-mail" autoComplete="email"
+                 value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input className="campo" type="password" required minLength={6} placeholder="Senha"
+                 autoComplete={criando ? 'new-password' : 'current-password'}
+                 value={senha} onChange={(e) => setSenha(e.target.value)} />
 
-          {pedeDados && (
-            <>
-              <input className="campo" required placeholder="Seu nome"
-                     value={dados.nome} onChange={(e) => campo('nome', e.target.value)} />
-              <input className="campo" required placeholder="WhatsApp" inputMode="tel"
-                     value={dados.whatsapp} onChange={(e) => campo('whatsapp', e.target.value)} />
-              <input className="campo" required placeholder="Cidade"
-                     value={dados.cidade} onChange={(e) => campo('cidade', e.target.value)} />
-              <label className="block">
-                <span className="etiqueta ml-1">Data de nascimento</span>
-                <input className="campo mt-1" required type="date"
-                       value={dados.nascimento} onChange={(e) => campo('nascimento', e.target.value)} />
-              </label>
-
-              <fieldset className="moldura-sutil p-4">
-                <legend className="etiqueta px-1">Você já fez alguma arte com o Vital?</legend>
-                <div className="flex gap-2 mt-2">
-                  {[true, false].map((v) => (
-                    <button key={String(v)} type="button" onClick={() => campo('jaFezArte', v)}
-                      className={`flex-1 rounded-xl border-2 py-2.5 font-semibold transition-colors ${
-                        dados.jaFezArte === v
-                          ? 'border-brand bg-brand text-white'
-                          : 'border-ink/15 text-muted hover:border-ink/30'
-                      }`}>
-                      {v ? 'Sim' : 'Ainda não'}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-            </>
-          )}
+          {criando && <CamposDoCadastro dados={dados} aoMudar={setDados} />}
 
           {erro && <p className="text-brand text-sm font-medium">{erro}</p>}
 
-          <button className="botao-principal w-full mt-2" disabled={ocupado}>
+          <button className="botao-principal w-full mt-2" disabled={ocupado || faltaResponder}>
             {ocupado ? <Loader2 size={18} className="animate-spin" /> : null}
-            {modo === 'entrar' ? 'Entrar' : modo === 'criar' ? 'Criar conta' : 'Continuar'}
+            {criando ? 'Criar conta' : 'Entrar'}
           </button>
         </form>
 
-        {modo !== 'completar' && (
-          <>
-            <div className="flex items-center gap-3 my-5">
-              <span className="h-px flex-1 bg-line" />
-              <span className="etiqueta">ou</span>
-              <span className="h-px flex-1 bg-line" />
-            </div>
-            <button onClick={google} disabled={ocupado} className="botao-neutro w-full">
-              Continuar com Google
-            </button>
-            <p className="text-center text-sm text-muted mt-6">
-              {modo === 'entrar' ? 'Ainda não tem conta?' : 'Já tem conta?'}{' '}
-              <button className="font-semibold text-brand underline underline-offset-2"
-                      onClick={() => { setModo(modo === 'entrar' ? 'criar' : 'entrar'); setErro('') }}>
-                {modo === 'entrar' ? 'Criar agora' : 'Entrar'}
-              </button>
-            </p>
-          </>
-        )}
+        <div className="flex items-center gap-3 my-5">
+          <span className="h-px flex-1 bg-line" />
+          <span className="etiqueta">ou</span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
+        <button onClick={google} disabled={ocupado} className="botao-neutro w-full">
+          Continuar com Google
+        </button>
+
+        <p className="text-center text-sm text-muted mt-6">
+          {criando ? 'Já tem conta?' : 'Ainda não tem conta?'}{' '}
+          <button className="font-semibold text-brand underline underline-offset-2"
+                  onClick={() => { setModo(criando ? 'entrar' : 'criar'); setErro('') }}>
+            {criando ? 'Entrar' : 'Criar agora'}
+          </button>
+        </p>
       </div>
     </div>
   )

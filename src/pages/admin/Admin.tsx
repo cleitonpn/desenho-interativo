@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { ArrowLeft, Download, Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, Download, EyeOff, Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { db } from '../../lib/firebase'
 import { Galinha } from '../../components/Galinha'
-import { SLOTS, carregarCatalogo, caminhoDaPeca, limparCacheDoCatalogo, pecasDoSlot } from '../../lib/catalogo'
-import { removerPecaRemota, renomearPecaRemota, type PecaRemota } from '../../lib/pecasRemotas'
+import { SLOTS, carregarCatalogo, caminhoDaPeca, limparCacheDoCatalogo } from '../../lib/catalogo'
+import { ajustarPeca, removerPecaRemota, type PecaRemota } from '../../lib/pecasRemotas'
 import { SubirPeca } from '../../components/SubirPeca'
 import { CORES } from '../../config/marca'
-import type { Catalogo, Criacao, Peca, Perfil } from '../../lib/tipos'
+import type { Catalogo, Criacao, Peca, Perfil, SlotId } from '../../lib/tipos'
 
 type Aba = 'mailing' | 'criacoes' | 'pecas'
 
@@ -153,7 +153,7 @@ function AbaPecas({ catalogo, aoMudar }: { catalogo: Catalogo | null; aoMudar: (
       </div>
 
       {SLOTS.map((slot) => {
-        const pecas = pecasDoSlot(catalogo, slot.id)
+        const pecas = catalogo.pecas.filter((p) => p.slot === slot.id)
         if (!pecas.length) return null
         return (
           <section key={slot.id}>
@@ -173,18 +173,27 @@ function AbaPecas({ catalogo, aoMudar }: { catalogo: Catalogo | null; aoMudar: (
   )
 }
 
-/** Peças do PSD só podem ser vistas; as que vieram do painel podem ser
- *  renomeadas e apagadas, porque moram no Firestore. */
+/**
+ * Cada peça pode ter nome e categoria corrigidos — inclusive as que vieram do
+ * PSD, cuja classificação foi feita no olho e pode estar errada. O ajuste vira
+ * um registro no Firestore que se sobrepõe ao catálogo estático, então nada
+ * disso precisa de deploy.
+ */
 function CartaoPeca({ peca, aoMudar }: { peca: Peca; aoMudar: () => Promise<void> }) {
   const remota = 'caminhoStorage' in peca ? (peca as PecaRemota) : null
-  const [editando, setEditando] = useState(false)
+  const [abrindo, setAbrindo] = useState(false)
   const [nome, setNome] = useState(peca.rotulo ?? '')
+  const [salvando, setSalvando] = useState(false)
 
-  async function salvar() {
-    if (!remota || !nome.trim()) return
-    await renomearPecaRemota(remota, nome.trim())
-    setEditando(false)
-    await aoMudar()
+  async function aplicar(mudancas: { slot?: SlotId; rotulo?: string; oculta?: boolean }) {
+    setSalvando(true)
+    try {
+      await ajustarPeca(peca, mudancas)
+      await aoMudar()
+      setAbrindo(false)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   async function apagar() {
@@ -195,29 +204,84 @@ function CartaoPeca({ peca, aoMudar }: { peca: Peca; aoMudar: () => Promise<void
   }
 
   return (
-    <figure className="moldura-sutil p-2 relative group">
+    <figure className={`moldura-sutil p-2 relative group ${peca.oculta ? 'opacity-40' : ''}`}>
+      {peca.oculta && (
+        <span className="absolute top-1 left-1 etiqueta !text-[8px] bg-ink text-canvas px-1.5 py-0.5 rounded">
+          fora do ar
+        </span>
+      )}
       <div className="h-16 grid place-items-center">
         <img src={caminhoDaPeca(peca)} alt="" className="max-h-16 max-w-full object-contain"
              style={{ filter: CORES.vermelho.filtro }} />
       </div>
-      {editando ? (
-        <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)}
-               onBlur={salvar} onKeyDown={(e) => e.key === 'Enter' && salvar()}
-               className="w-full text-[10px] text-center border-b-2 border-brand bg-transparent mt-1.5 outline-none" />
-      ) : (
-        <figcaption className="text-[10px] text-center text-muted mt-1.5 leading-tight">
-          {peca.rotulo}
-          <span className="block text-faint mt-0.5">{peca.origem.replace('.png', '')}</span>
-        </figcaption>
-      )}
-      {remota && !editando && (
-        <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => setEditando(true)} className="p-1 rounded bg-surface border border-line text-muted hover:text-ink" aria-label="Renomear">
-            <Pencil size={11} />
-          </button>
-          <button onClick={apagar} className="p-1 rounded bg-surface border border-line text-muted hover:text-brand" aria-label="Apagar">
+      <figcaption className="text-[10px] text-center text-muted mt-1.5 leading-tight">
+        {peca.rotulo}
+        <span className="block text-faint mt-0.5">{peca.origem.replace('.png', '')}</span>
+      </figcaption>
+
+      <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100
+                      focus-within:opacity-100 transition-opacity">
+        <button onClick={() => setAbrindo(true)}
+                className="p-1 rounded bg-surface border border-line text-muted hover:text-ink"
+                aria-label={`Ajustar ${peca.rotulo}`}>
+          <Pencil size={11} />
+        </button>
+        {remota && (
+          <button onClick={apagar}
+                  className="p-1 rounded bg-surface border border-line text-muted hover:text-brand"
+                  aria-label={`Apagar ${peca.rotulo}`}>
             <Trash2 size={11} />
           </button>
+        )}
+      </div>
+
+      {abrindo && (
+        <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4"
+             onClick={() => !salvando && setAbrindo(false)}>
+          <div className="bg-surface rounded-2xl border-[2.5px] border-ink w-full max-w-sm p-5
+                          space-y-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <img src={caminhoDaPeca(peca)} alt="" className="h-14 w-14 object-contain" />
+              <div className="min-w-0">
+                <p className="font-display text-lg leading-tight">{peca.rotulo}</p>
+                <p className="etiqueta truncate">{peca.origem.replace('.png', '')}</p>
+              </div>
+            </div>
+
+            <label className="block">
+              <span className="etiqueta">Nome que o cliente vê</span>
+              <input autoFocus className="campo mt-1" value={nome}
+                     onChange={(e) => setNome(e.target.value)} />
+            </label>
+
+            <div>
+              <span className="etiqueta">Categoria</span>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {SLOTS.map((s) => (
+                  <button key={s.id} onClick={() => aplicar({ slot: s.id, rotulo: nome.trim() || peca.rotulo })}
+                    disabled={salvando}
+                    className={`px-2.5 py-1.5 rounded-full border-2 text-xs font-semibold transition-colors ${
+                      peca.slot === s.id ? 'border-ink bg-ink text-canvas' : 'border-ink/15 text-muted hover:border-ink/40'}`}>
+                    {s.emoji} {s.rotulo}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted mt-2">
+                Tocar numa categoria move a peça e salva na hora.
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => aplicar({ oculta: !peca.oculta })} disabled={salvando}
+                      className="botao-neutro flex-1 !py-2.5 text-sm">
+                <EyeOff size={16} /> {peca.oculta ? 'Mostrar' : 'Esconder'}
+              </button>
+              <button onClick={() => aplicar({ rotulo: nome.trim() || peca.rotulo })}
+                      disabled={salvando || !nome.trim()} className="botao-principal flex-1 !py-2.5 text-sm">
+                {salvando ? <Loader2 size={16} className="animate-spin" /> : null} Salvar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </figure>

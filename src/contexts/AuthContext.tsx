@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import {
-  createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword,
-  signInWithPopup, signOut, type User,
+  EmailAuthProvider, createUserWithEmailAndPassword, onAuthStateChanged,
+  reauthenticateWithCredential, signInWithEmailAndPassword, signInWithPopup,
+  signOut, updatePassword, type User,
 } from 'firebase/auth'
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db, googleProvider } from '../lib/firebase'
@@ -13,7 +14,12 @@ export interface DadosCadastro {
   whatsapp: string
   cidade: string
   nascimento: string
-  jaFezArte: boolean
+  /**
+   * null enquanto a pessoa nao respondeu. Sem isso, "Ainda nao" aparece
+   * marcado de saida e o Vital recebe um "nao" que ninguem deu — um mailing
+   * com resposta inventada e pior que um sem resposta.
+   */
+  jaFezArte: boolean | null
 }
 
 interface Ctx {
@@ -24,6 +30,10 @@ interface Ctx {
   criarConta: (email: string, senha: string, dados: DadosCadastro) => Promise<void>
   entrarComGoogle: () => Promise<boolean>
   completarPerfil: (dados: DadosCadastro) => Promise<void>
+  atualizarPerfil: (dados: DadosCadastro) => Promise<void>
+  trocarSenha: (atual: string, nova: string) => Promise<void>
+  /** Contas do Google não têm senha para trocar aqui. */
+  temSenha: boolean
   sair: () => Promise<void>
 }
 
@@ -54,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       whatsapp: dados.whatsapp,
       cidade: dados.cidade,
       nascimento: dados.nascimento,
-      jaFezArte: dados.jaFezArte,
+      jaFezArte: dados.jaFezArte ?? false,
       criadoEm: serverTimestamp(),
     }
     await setDoc(doc(db, 'usuarios', u.uid), novo, { merge: true })
@@ -86,6 +96,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!auth.currentUser) throw new Error('Ninguém está logado.')
       await gravarPerfil(auth.currentUser, dados)
     },
+    async atualizarPerfil(dados) {
+      if (!auth.currentUser) throw new Error('Ninguém está logado.')
+      await gravarPerfil(auth.currentUser, dados)
+    },
+    /**
+     * O Firebase exige login recente para trocar senha. Em vez de deixar a
+     * pessoa levar um erro seco depois de preencher tudo, pedimos a senha atual
+     * e reautenticamos na hora.
+     */
+    async trocarSenha(atual, nova) {
+      const u = auth.currentUser
+      if (!u?.email) throw new Error('Ninguém está logado.')
+      await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, atual))
+      await updatePassword(u, nova)
+    },
+    temSenha: usuario?.providerData.some((p) => p.providerId === 'password') ?? false,
     async sair() {
       await signOut(auth)
     },

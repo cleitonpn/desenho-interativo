@@ -16,14 +16,34 @@ export interface PecaRemota extends Peca {
   caminhoStorage: string
 }
 
+/**
+ * O id de uma peca tem barra ("cabeca/chapeu-cowboy"), e barra no Firestore
+ * cria subcolecao. Guardamos com "__" e desfazemos na leitura.
+ */
+function paraDocId(id: string): string { return id.replace(/\//g, '__') }
+function deDocId(docId: string): string { return docId.replace(/__/g, '/') }
+
 export async function listarPecasRemotas(): Promise<PecaRemota[]> {
   try {
     const snap = await getDocs(collection(db, COLECAO))
-    return snap.docs.map((d) => ({ ...(d.data() as PecaRemota), id: d.id }))
+    return snap.docs.map((d) => ({ ...(d.data() as PecaRemota), id: deDocId(d.id) }))
   } catch {
     // Sem permissão ou sem rede: o app segue com o catálogo do PSD.
     return []
   }
+}
+
+/**
+ * Corrige o slot, o nome ou a visibilidade de qualquer peca — inclusive das
+ * que vieram do PSD, que nao tem documento proprio. Nesse caso o ajuste grava
+ * um registro com o mesmo id, e o catalogo o usa no lugar do estatico. O PNG
+ * continua onde esta; muda so a ficha dele.
+ */
+export async function ajustarPeca(
+  peca: Peca, mudancas: { slot?: SlotId; rotulo?: string; oculta?: boolean },
+): Promise<void> {
+  const atualizada = { ...peca, ...mudancas }
+  await setDoc(doc(db, COLECAO, paraDocId(peca.id)), atualizada, { merge: true })
 }
 
 /**
@@ -85,21 +105,17 @@ export async function publicarPeca(
     x: medidas.x, y: medidas.y, w: medidas.w, h: medidas.h,
     origem: arquivo.name, oculta: false,
   }
-  await setDoc(doc(db, COLECAO, chave), peca)
+  await setDoc(doc(db, COLECAO, paraDocId(chave)), peca)
   return peca
 }
 
 export async function removerPecaRemota(peca: PecaRemota): Promise<void> {
-  await deleteDoc(doc(db, COLECAO, peca.id))
+  await deleteDoc(doc(db, COLECAO, paraDocId(peca.id)))
   try {
     await deleteObject(ref(storage, peca.caminhoStorage))
   } catch {
     // O documento já saiu; um arquivo órfão no Storage não quebra o app.
   }
-}
-
-export async function renomearPecaRemota(peca: PecaRemota, rotulo: string): Promise<void> {
-  await setDoc(doc(db, COLECAO, peca.id), { ...peca, rotulo }, { merge: true })
 }
 
 function gerarSlug(texto: string): string {

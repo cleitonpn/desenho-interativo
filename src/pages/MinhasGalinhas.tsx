@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Loader2, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Trash2, UserRound } from 'lucide-react'
 import { Galinha } from '../components/Galinha'
 import { carregarCatalogo } from '../lib/catalogo'
 import { apagarCriacao, minhasCriacoes } from '../lib/criacoes'
@@ -24,9 +24,14 @@ export function MinhasGalinhas() {
 
   return (
     <div className="min-h-dvh px-5 py-6 safe-top safe-bottom">
-      <Link to="/montar" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
-        <ArrowLeft size={18} /> Montar
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link to="/montar" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
+          <ArrowLeft size={18} /> Montar
+        </Link>
+        <Link to="/conta" className="text-muted hover:text-ink transition-colors" aria-label="Minha conta">
+          <UserRound size={20} />
+        </Link>
+      </div>
       <h1 className="font-display text-3xl mt-5 mb-6">Minhas galinhas</h1>
 
       {!catalogo || lista === null ? (

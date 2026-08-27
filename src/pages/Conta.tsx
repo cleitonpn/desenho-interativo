@@ -2,7 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, KeyRound, Loader2, LogOut, ShieldCheck } from 'lucide-react'
 import { MARCA } from '../config/marca'
+import { CamposDoCadastro } from '../components/CamposDoCadastro'
 import { useAuth, type DadosCadastro } from '../contexts/AuthContext'
+import { renomearAutor } from '../lib/criacoes'
 
 const VAZIO: DadosCadastro = { nome: '', whatsapp: '', cidade: '', nascimento: '', jaFezArte: null }
 
@@ -24,15 +26,14 @@ export function Conta() {
     }
   }, [perfil])
 
-  function campo<K extends keyof DadosCadastro>(k: K, v: DadosCadastro[K]) {
-    setDados((d) => ({ ...d, [k]: v })); setSalvo(false)
-  }
-
   async function salvar(e: FormEvent) {
     e.preventDefault()
     setOcupado(true); setErro('')
     try {
       await atualizarPerfil(dados)
+      // A vitrine mostra o nome gravado junto da criacao; sem isso ela
+      // continuaria exibindo o nome antigo.
+      if (usuario && dados.nome !== perfil?.nome) await renomearAutor(usuario.uid, dados.nome)
       setSalvo(true)
       setTimeout(() => setSalvo(false), 2600)
     } catch {
@@ -63,40 +64,7 @@ export function Conta() {
             {/* Trocar e-mail exige confirmação por link; fica fora daqui de propósito. */}
             <input className="campo mt-1 opacity-60" value={usuario?.email ?? ''} disabled />
           </label>
-          <label className="block">
-            <span className="etiqueta ml-1">Nome</span>
-            <input className="campo mt-1" required value={dados.nome}
-                   onChange={(e) => campo('nome', e.target.value)} />
-          </label>
-          <label className="block">
-            <span className="etiqueta ml-1">WhatsApp</span>
-            <input className="campo mt-1" required inputMode="tel" value={dados.whatsapp}
-                   onChange={(e) => campo('whatsapp', e.target.value)} />
-          </label>
-          <label className="block">
-            <span className="etiqueta ml-1">Cidade</span>
-            <input className="campo mt-1" required value={dados.cidade}
-                   onChange={(e) => campo('cidade', e.target.value)} />
-          </label>
-          <label className="block">
-            <span className="etiqueta ml-1">Data de nascimento</span>
-            <input className="campo mt-1" required type="date" value={dados.nascimento}
-                   onChange={(e) => campo('nascimento', e.target.value)} />
-          </label>
-
-          <fieldset className="moldura-sutil p-4">
-            <legend className="etiqueta px-1">Já fez alguma arte com o Vital?</legend>
-            <div className="flex gap-2 mt-2">
-              {[true, false].map((v) => (
-                <button key={String(v)} type="button" onClick={() => campo('jaFezArte', v)}
-                  className={`flex-1 rounded-xl border-2 py-2.5 font-semibold transition-colors ${
-                    dados.jaFezArte === v ? 'border-brand bg-brand text-white'
-                      : 'border-ink/15 text-muted hover:border-ink/30'}`}>
-                  {v ? 'Sim' : 'Ainda não'}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          <CamposDoCadastro dados={dados} aoMudar={setDados} />
 
           {erro && <p className="text-brand text-sm font-medium">{erro}</p>}
 

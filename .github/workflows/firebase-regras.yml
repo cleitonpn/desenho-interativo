@@ -1,0 +1,32 @@
+name: Publicar regras e índices do Firebase
+
+# As regras e os índices vivem no repositório, então precisam ir para o
+# Firebase sozinhos. Sem isso, uma consulta nova quebra em produção esperando
+# um índice que só existe no arquivo.
+on:
+  push:
+    branches: [claude/galinha-customizavel-app-7dg7w6, main]
+    paths:
+      - firestore.rules
+      - firestore.indexes.json
+      - storage.rules
+      - firebase.json
+  workflow_dispatch:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy
+        env:
+          CONTA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$CONTA" > "$RUNNER_TEMP/conta.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/conta.json"
+          npx -y firebase-tools@latest deploy \
+            --only firestore:rules,firestore:indexes,storage \
+            --project galeriadovital --non-interactive

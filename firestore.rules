@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() { return request.auth != null; }
+    function dono(uid) { return logado() && request.auth.uid == uid; }
+    function ehAdmin() {
+      return logado()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.admin == true;
+    }
+
+    // Dados pessoais do mailing: so a propria pessoa e o Vital enxergam.
+    match /usuarios/{uid} {
+      allow read: if dono(uid) || ehAdmin();
+      allow create: if dono(uid);
+      // O proprio usuario nunca pode se promover a admin.
+      allow update: if (dono(uid) && !('admin' in request.resource.data.diff(resource.data).affectedKeys()))
+                    || ehAdmin();
+      allow delete: if ehAdmin();
+    }
+
+    // Criacoes publicas alimentam a vitrine da abertura, entao sao legiveis
+    // por qualquer um — inclusive por quem ainda nao entrou.
+    match /criacoes/{id} {
+      allow read: if resource.data.publica == true || dono(resource.data.uid) || ehAdmin();
+      allow create: if dono(request.resource.data.uid);
+      allow update, delete: if dono(resource.data.uid) || ehAdmin();
+    }
+  }
+}

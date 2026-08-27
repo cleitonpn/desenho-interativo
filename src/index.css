@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --c-canvas: 250 249 247;
+    --c-surface: 255 255 255;
+    --c-raised: 245 243 240;
+    --c-line: 228 224 219;
+
+    --c-ink: 17 17 17;
+    --c-muted: 92 88 84;
+    --c-faint: 148 143 138;
+
+    --c-brand: 255 26 14;
+    --c-brand-deep: 199 16 6;
+    --c-brand-soft: 255 236 234;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --c-canvas: 12 11 11;
+    --c-surface: 24 22 22;
+    --c-raised: 33 30 30;
+    --c-line: 54 49 49;
+
+    --c-ink: 245 243 241;
+    --c-muted: 165 158 152;
+    --c-faint: 120 113 108;
+
+    --c-brand: 255 62 48;
+    --c-brand-deep: 255 26 14;
+    --c-brand-soft: 61 21 18;
+  }
+
+  * { -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    overscroll-behavior-y: none;
+  }
+  .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+  .safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
+}
+
+@layer components {
+  /* Papel de croqui: textura sutil atras da galinha */
+  .papel {
+    background-color: rgb(var(--c-surface));
+    background-image:
+      linear-gradient(rgb(var(--c-line) / .35) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--c-line) / .35) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+}
+
+@layer components {
+  /* Cartoon: contorno preto grosso + sombra dura deslocada, como adesivo.
+     Galeria: muito branco dentro e nenhum gradiente. */
+  .moldura {
+    @apply bg-surface border-[2.5px] border-ink rounded-2xl;
+    box-shadow: 5px 5px 0 0 rgb(var(--c-ink));
+  }
+  .moldura-sutil {
+    @apply bg-surface border-2 border-ink/15 rounded-2xl;
+    box-shadow: 3px 3px 0 0 rgb(var(--c-ink) / .1);
+  }
+  /* Quadro de parede: usado na vitrine, com passe-partout largo. */
+  .quadro {
+    @apply bg-surface border-[2.5px] border-ink rounded-lg p-3;
+    box-shadow: 6px 6px 0 0 rgb(var(--c-ink));
+  }
+  /* Etiqueta de museu: legenda pequena, caixa alta, bem espacada. */
+  .etiqueta {
+    @apply text-[10px] uppercase tracking-[0.18em] font-semibold text-muted;
+  }
+  .botao {
+    @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold
+           border-[2.5px] border-ink px-5 py-3 transition-transform active:translate-y-[2px];
+    box-shadow: 4px 4px 0 0 rgb(var(--c-ink));
+  }
+  .botao:active { box-shadow: 1px 1px 0 0 rgb(var(--c-ink)); }
+  .botao-principal { @apply botao bg-brand text-white; }
+  .botao-neutro { @apply botao bg-surface text-ink; }
+  .campo {
+    @apply w-full rounded-xl border-2 border-ink/20 bg-surface px-4 py-3 text-ink
+           placeholder:text-faint focus:border-brand focus:outline-none transition-colors;
+  }
+}

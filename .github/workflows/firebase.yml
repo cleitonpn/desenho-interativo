@@ -1,0 +1,24 @@
+name: Publicar no Firebase Hosting
+
+# Fica manual ate o site definitivo existir no Firebase. Quando o nome estiver
+# fechado, basta rodar pela aba Actions ou trocar por um gatilho de push.
+on:
+  workflow_dispatch:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: galeriadovital
+          channelId: live

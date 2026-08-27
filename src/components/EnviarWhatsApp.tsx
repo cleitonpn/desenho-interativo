@@ -7,6 +7,7 @@ import { descrever } from '../lib/composicao'
 import { baixarCanvas, canvasParaBlob, renderizar } from '../lib/exportar'
 import { linkWhatsApp, podeCompartilharArquivo } from '../lib/whatsapp'
 import { useAuth } from '../contexts/AuthContext'
+import { registrarAcao, registrarConjunto } from '../lib/telemetria'
 import type { Catalogo, Escolhas } from '../lib/tipos'
 
 interface Props {
@@ -41,6 +42,8 @@ export function EnviarWhatsApp({ catalogo, escolhas, cor, aoFechar }: Props) {
       const destino = ref(storage, caminho)
       await uploadBytes(destino, blob, { contentType: 'image/png' })
       const url = await getDownloadURL(destino)
+      registrarAcao('whatsapp')
+      registrarConjunto(escolhas, 'levadas')
       window.open(linkWhatsApp(itens, CORES[cor].rotulo, url), '_blank')
     } catch {
       // Se o upload falhar, ainda vale abrir a conversa só com o texto.
@@ -59,6 +62,8 @@ export function EnviarWhatsApp({ catalogo, escolhas, cor, aoFechar }: Props) {
     if (!podeCompartilharArquivo(arquivo)) { baixarCanvas(canvas, 'minha-galinha.png'); return }
     try {
       await navigator.share({ files: [arquivo], text: `Minha galinha 🐔 ${itens.join(', ')}` })
+      registrarAcao('compartilhamento')
+      registrarConjunto(escolhas, 'levadas')
     } catch { /* cancelado pela pessoa */ }
   }
 
@@ -93,7 +98,12 @@ export function EnviarWhatsApp({ catalogo, escolhas, cor, aoFechar }: Props) {
               <button onClick={compartilhar} disabled={!canvas} className="botao-neutro flex-1 !py-2.5">
                 <Share2 size={18} /> Compartilhar
               </button>
-              <button onClick={() => canvas && baixarCanvas(canvas, 'minha-galinha.png')}
+              <button onClick={() => {
+                        if (!canvas) return
+                        registrarAcao('download')
+                        registrarConjunto(escolhas, 'levadas')
+                        baixarCanvas(canvas, 'minha-galinha.png')
+                      }}
                       disabled={!canvas} className="botao-neutro flex-1 !py-2.5">
                 <Download size={18} /> Baixar
               </button>

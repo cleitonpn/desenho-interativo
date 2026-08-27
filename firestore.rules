@@ -27,6 +27,18 @@ service cloud.firestore {
       allow write: if ehAdmin();
     }
 
+    // Telemetria. Qualquer pessoa logada soma nos contadores; so o Vital le.
+    // Os documentos nao guardam nada que identifique alguem alem do uid da
+    // sessao, e ninguem pode ler o que os outros fizeram.
+    match /metricas/{id} {
+      allow read: if ehAdmin();
+      allow write: if logado();
+    }
+    match /sessoes/{id} {
+      allow read: if ehAdmin();
+      allow create, update: if logado();
+    }
+
     // Criacoes publicas alimentam a vitrine da abertura, entao sao legiveis
     // por qualquer um — inclusive por quem ainda nao entrou.
     match /criacoes/{id} {

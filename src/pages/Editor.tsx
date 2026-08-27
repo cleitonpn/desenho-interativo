@@ -10,6 +10,9 @@ import { contarPecas, sortear } from '../lib/composicao'
 import { preAquecer } from '../lib/exportar'
 import { salvarCriacao } from '../lib/criacoes'
 import { useAuth } from '../contexts/AuthContext'
+import {
+  iniciarSessao, registrarAcao, registrarConjunto, registrarPeca,
+} from '../lib/telemetria'
 import type { Catalogo, Escolhas, SlotId } from '../lib/tipos'
 
 export function Editor() {
@@ -27,11 +30,20 @@ export function Editor() {
     carregarCatalogo().then((c) => { setCatalogo(c); preAquecer(c) }).catch(() => {})
   }, [])
 
+  useEffect(() => { if (usuario) iniciarSessao(usuario.uid) }, [usuario])
+
   const total = contarPecas(escolhas)
 
   /** Alternar: tocar de novo no item escolhido tira a peça. */
   function escolher(slot: SlotId, id: string) {
-    setEscolhas((e) => (e[slot] === id ? { ...e, [slot]: undefined } : { ...e, [slot]: id }))
+    setEscolhas((e) => {
+      const tirando = e[slot] === id
+      // "descarte" é a peça que a pessoa vestiu e tirou: diz tanto quanto a
+      // escolhida, porque marca o que atraiu mas não convenceu.
+      if (tirando) { registrarPeca(id, slot, 'descartes'); registrarAcao('remocao') }
+      else { registrarPeca(id, slot, 'escolhas'); registrarAcao('escolha_manual') }
+      return { ...e, [slot]: tirando ? undefined : id }
+    })
     setSalvo(false)
   }
 
@@ -40,6 +52,8 @@ export function Editor() {
     setSalvando(true)
     try {
       await salvarCriacao(usuario.uid, perfil?.nome ?? 'Alguém', escolhas, cor)
+      registrarAcao('salvamento')
+      registrarConjunto(escolhas, 'salvamentos')
       setSalvo(true)
       setTimeout(() => setSalvo(false), 2400)
     } finally {
@@ -77,14 +91,19 @@ export function Editor() {
       </main>
 
       <div className="px-5 flex flex-wrap gap-2 justify-center pb-3">
-        <button onClick={() => { setEscolhas(sortear(catalogo)); setSalvo(false) }} className="botao-neutro !py-2.5">
+        <button onClick={() => {
+                  const sorteada = sortear(catalogo)
+                  registrarAcao('sorteio')
+                  registrarConjunto(sorteada, 'escolhas')
+                  setEscolhas(sorteada); setSalvo(false)
+                }} className="botao-neutro !py-2.5">
           <Dices size={18} /> Sortear
         </button>
-        <button onClick={() => { setEscolhas({}); setSalvo(false) }} disabled={total === 0}
+        <button onClick={() => { registrarAcao('limpeza'); setEscolhas({}); setSalvo(false) }} disabled={total === 0}
                 className="botao-neutro !py-2.5 disabled:opacity-40">
           <Eraser size={18} /> Limpar
         </button>
-        <button onClick={() => setPele(true)} disabled={total === 0}
+        <button onClick={() => { registrarAcao('prova_pele'); setPele(true) }} disabled={total === 0}
                 className="botao-neutro !py-2.5 disabled:opacity-40">
           <Scan size={18} /> Na pele
         </button>
@@ -109,10 +128,11 @@ export function Editor() {
 }
 
 function SeletorDeCor({ cor, aoTrocar }: { cor: CorId; aoTrocar: (c: CorId) => void }) {
+  const trocar = (id: CorId) => { if (id !== cor) registrarAcao('troca_cor'); aoTrocar(id) }
   return (
     <div className="flex gap-1 p-1 rounded-full border-2 border-ink/15 bg-surface">
       {(Object.keys(CORES) as CorId[]).map((id) => (
-        <button key={id} onClick={() => aoTrocar(id)} aria-label={`Versão ${CORES[id].rotulo}`}
+        <button key={id} onClick={() => trocar(id)} aria-label={`Versão ${CORES[id].rotulo}`}
           className={`w-7 h-7 rounded-full border-2 transition-transform ${
             cor === id ? 'border-ink scale-100' : 'border-transparent scale-90 opacity-60'}`}
           style={{ background: CORES[id].amostra } as React.CSSProperties} />

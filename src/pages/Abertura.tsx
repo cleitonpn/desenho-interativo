@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Instagram, Sparkles } from 'lucide-react'
+import { Instagram } from 'lucide-react'
 import { MARCA } from '../config/marca'
 import { Galinha } from '../components/Galinha'
 import { carregarCatalogo } from '../lib/catalogo'
@@ -41,7 +41,7 @@ export function Abertura() {
           óculos, a bota — e leve o desenho pronto para tatuar.
         </p>
         <Link to="/entrar" className="botao-principal mt-8 text-lg px-8">
-          <Sparkles size={20} /> Começar
+          Começar
         </Link>
       </main>
 

@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { ArrowLeft, Loader2, Shirt } from 'lucide-react'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { formatarPreco, TIPOS_ROTULO, type Produto } from '../lib/loja'
+import { formatarPreco, TIPOS_ROTULO, type Arte, type Produto } from '../lib/loja'
 
 export function Loja() {
+  // Quem chega do editor traz a criação junto: a loja abre já sabendo o que
+  // vai na peça, em vez de mandar a pessoa montar tudo de novo.
+  const vindo = useLocation().state as { arte?: Arte; personagem?: string } | null
   const [produtos, setProdutos] = useState<Produto[] | null>(null)
 
   useEffect(() => {
@@ -24,7 +27,16 @@ export function Loja() {
 
       <div className="max-w-3xl mx-auto mt-6">
         <p className="etiqueta">Do estúdio para você</p>
-        <h1 className="font-display text-4xl mt-1.5 mb-6">Loja</h1>
+        <h1 className="font-display text-4xl mt-1.5 mb-4">Loja</h1>
+
+        {vindo?.arte && (
+          <p className="moldura-sutil p-4 mb-6 text-sm flex items-start gap-2.5">
+            <Shirt size={18} className="text-brand shrink-0 mt-0.5" />
+            <span className="text-muted">
+              Sua criação vem junto. Escolha uma peça e ela entra na estampa.
+            </span>
+          </p>
+        )}
 
         {!produtos ? (
           <div className="grid place-items-center py-20 text-muted"><Loader2 className="animate-spin" /></div>
@@ -39,7 +51,9 @@ export function Loja() {
               <h2 className="etiqueta mb-3">{cat}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {produtos.filter((p) => p.categoria === cat).map((p) => (
-                  <Link key={p.id} to={`/loja/${p.id}`} className="quadro !p-2.5 transition-transform active:translate-y-[2px]">
+                  <Link key={p.id} to={`/loja/${p.id}`}
+                        state={vindo?.arte ? { arte: vindo.arte, personagem: vindo.personagem } : undefined}
+                        className="quadro !p-2.5 transition-transform active:translate-y-[2px]">
                     <div className="papel rounded aspect-square grid place-items-center overflow-hidden">
                       {p.fotos[0]
                         ? <img src={p.fotos[0]} alt={p.nome} loading="lazy" className="w-full h-full object-cover" />

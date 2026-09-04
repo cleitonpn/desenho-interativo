@@ -45,6 +45,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if ehAdmin();
     }
+    match /fretes/{id} {
+      allow read: if true;
+      allow write: if ehAdmin();
+    }
 
     // Progresso pessoal: so a propria pessoa mexe no seu.
     match /progresso/{uid} {

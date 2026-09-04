@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Check, Dices, Eraser, Images, Loader2, Save, Scan, Send, UserRound, X,
+  ArrowLeft, Check, Dices, Eraser, Images, Loader2, Save, Scan, Send, Shirt, UserRound, X,
 } from 'lucide-react'
 import { CORES, CORES_DO_EDITOR, type CorId } from '../config/marca'
 import { Desenho } from '../components/Desenho'
@@ -22,6 +22,7 @@ import { registrarDescoberta, registrarMarco } from '../lib/progresso'
 import type { Catalogo, Escolhas, Personagem, SlotId } from '../lib/tipos'
 
 export function Editor() {
+  const navegar = useNavigate()
   const { usuario, perfil } = useAuth()
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
   // A galinha do dia chega pela navegação: abrir o editor já com ela montada
@@ -158,6 +159,12 @@ export function Editor() {
           <Dices size={18} /> Sortear
         </button>
 
+        <AcaoIcone rotulo="Ver numa camiseta" desabilitado={total === 0}
+                   onClick={() => navegar('/loja', {
+                     state: { arte: { tipo: 'galinha', escolhas, cor }, personagem: personagem.id },
+                   })}>
+          <Shirt size={18} />
+        </AcaoIcone>
         <AcaoIcone rotulo="Ver na pele" onClick={() => { registrarAcao('prova_pele'); setPele(true) }}
                    desabilitado={total === 0}>
           <Scan size={18} />

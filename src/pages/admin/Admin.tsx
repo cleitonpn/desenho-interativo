@@ -219,7 +219,7 @@ function CartaoPeca({ peca, aoMudar }: { peca: Peca; aoMudar: () => Promise<void
         </span>
       )}
       <div className="h-16 grid place-items-center">
-        <img src={caminhoDaPeca(peca)} alt="" className="max-h-16 max-w-full object-contain"
+        <img src={caminhoDaPeca(peca)} alt="" className="max-h-16 max-w-full object-contain miniatura-peca"
              style={{ filter: CORES.vermelho.filtro }} />
       </div>
       <figcaption className="text-[10px] text-center text-muted mt-1.5 leading-tight">
@@ -249,7 +249,7 @@ function CartaoPeca({ peca, aoMudar }: { peca: Peca; aoMudar: () => Promise<void
           <div className="bg-surface rounded-2xl border-[2.5px] border-ink w-full max-w-sm p-5
                           space-y-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3">
-              <img src={caminhoDaPeca(peca)} alt="" className="h-14 w-14 object-contain" />
+              <img src={caminhoDaPeca(peca)} alt="" className="h-14 w-14 object-contain miniatura-peca" />
               <div className="min-w-0">
                 <p className="font-display text-lg leading-tight">{peca.rotulo}</p>
                 <p className="etiqueta truncate">{peca.origem.replace('.png', '')}</p>

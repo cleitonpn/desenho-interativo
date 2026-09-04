@@ -190,7 +190,7 @@ function MenuDeSlots({ catalogo, escolhas, cor, aberto, aoAbrir, aoEscolher }: M
                     ativa ? 'border-brand bg-brand-soft' : 'border-ink/10 hover:border-ink/25'}`}>
                   <div className="h-16 grid place-items-center">
                     <img src={caminhoDaPeca(p)} alt="" loading="lazy" decoding="async"
-                         className="max-h-16 max-w-full object-contain"
+                         className="max-h-16 max-w-full object-contain miniatura-peca"
                          style={{ filter: CORES[cor].filtro }} />
                   </div>
                   <span className="block text-[11px] leading-tight mt-1.5 text-center text-muted line-clamp-2">

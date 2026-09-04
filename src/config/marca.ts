@@ -34,17 +34,37 @@ export const MARCA = {
  */
 export const CURVA_PRETO = [0, 0.07, 0.3, 0.55, 1] as const
 
+/**
+ * A curva da estampa sobre tecido escuro. Nao e o espelho da de cima: espelhar
+ * dava um traco acinzentado (#E3) e sombras de meio-tom, que sobre preto lem
+ * como desenho sujo em vez de estampa.
+ *
+ * Aqui o traco vai a branco quase puro e as sombras descem bem mais, ficando
+ * discretas — o desenho fica limpo, com o tecido aparecendo por dentro, que e
+ * como uma estampa de uma cor se comporta de verdade.
+ *
+ *   traco  #FF1A0E (lum .29) -> .98  branco
+ *   sombra #FF655D (lum .52) -> .48  cinza discreto
+ *   branco #FFFFFF (lum 1.0) -> 0    vira o proprio tecido
+ */
+export const CURVA_BRANCO = [1, 1, 1, 0.94, 0.5, 0.38, 0.2, 0.08, 0] as const
+
 /** Pesos de luminancia do feColorMatrix saturate(0), para a tela e o canvas
  *  chegarem exatamente ao mesmo resultado. */
 export const LUMINANCIA = { r: 0.213, g: 0.715, b: 0.072 } as const
 
-/** Aplica CURVA_PRETO a um valor 0..255, interpolando entre os pontos. */
-export function curvaPreto(valor: number, invertida = false): number {
-  const x = (valor / 255) * (CURVA_PRETO.length - 1)
-  const i = Math.min(Math.floor(x), CURVA_PRETO.length - 2)
+/** Interpola um valor 0..255 numa das curvas acima. */
+export function aplicarCurvaEm(valor: number, curva: readonly number[]): number {
+  const x = (valor / 255) * (curva.length - 1)
+  const i = Math.min(Math.floor(x), curva.length - 2)
   const t = x - i
-  const v = CURVA_PRETO[i] + (CURVA_PRETO[i + 1] - CURVA_PRETO[i]) * t
-  return (invertida ? 1 - v : v) * 255
+  return (curva[i] + (curva[i + 1] - curva[i]) * t) * 255
+}
+
+export function curvaDaCor(cor: CorId): readonly number[] | null {
+  if (cor === 'preto') return CURVA_PRETO
+  if (cor === 'branco') return CURVA_BRANCO
+  return null
 }
 
 /**

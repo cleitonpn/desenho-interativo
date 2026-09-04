@@ -91,3 +91,20 @@
            placeholder:text-faint focus:border-brand focus:outline-none transition-colors;
   }
 }
+
+@layer components {
+  /**
+   * Miniatura de peça solta (menu do editor, painel do Vital).
+   *
+   * O branco nas camadas do Vital é tinta opaca que esconde o que está
+   * embaixo. Na galinha montada isso é essencial; numa peça isolada não há
+   * nada embaixo, e a máscara vira uma bolha branca em volta do desenho.
+   *
+   * multiply faz o branco assumir a cor do fundo — some sem precisar apagar
+   * pixel nenhum, e o traço continua intacto. Só vale sobre fundo claro, que é
+   * onde as miniaturas sempre aparecem.
+   */
+  .miniatura-peca {
+    mix-blend-mode: multiply;
+  }
+}

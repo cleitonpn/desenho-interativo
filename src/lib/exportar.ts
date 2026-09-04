@@ -1,4 +1,4 @@
-import { CORES, LUMINANCIA, MARCA, curvaPreto, type CorId } from '../config/marca'
+import { CORES, LUMINANCIA, MARCA, aplicarCurvaEm, curvaDaCor, type CorId } from '../config/marca'
 import { caminhoDaPeca } from './catalogo'
 import { camadasEmOrdem } from './composicao'
 import type { Catalogo, Escolhas } from './tipos'
@@ -84,7 +84,8 @@ export async function renderizar(
   // A conversao para preto e feita pixel a pixel, e nao por ctx.filter, porque
   // filtro por url() nao e confiavel fora do Chrome — e esta e a imagem que a
   // pessoa leva para tatuar.
-  if (cor === 'preto' || cor === 'branco') aplicarCurva(ctx, canvas.width, canvas.height, cor === 'branco')
+  const curva = curvaDaCor(cor)
+  if (curva) aplicarCurva(ctx, canvas.width, canvas.height, curva)
 
   if (!semAssinatura) {
     const tamanho = Math.round(rodape * escala * 0.32)
@@ -103,14 +104,14 @@ export async function renderizar(
  * exportacao, entao o custo nao aparece.
  */
 function aplicarCurva(
-  ctx: CanvasRenderingContext2D, largura: number, altura: number, invertida: boolean,
+  ctx: CanvasRenderingContext2D, largura: number, altura: number, curva: readonly number[],
 ): void {
   const dados = ctx.getImageData(0, 0, largura, altura)
   const px = dados.data
   for (let i = 0; i < px.length; i += 4) {
     if (px[i + 3] === 0) continue
     const lum = px[i] * LUMINANCIA.r + px[i + 1] * LUMINANCIA.g + px[i + 2] * LUMINANCIA.b
-    const v = curvaPreto(lum, invertida)
+    const v = aplicarCurvaEm(lum, curva)
     px[i] = px[i + 1] = px[i + 2] = v
   }
   ctx.putImageData(dados, 0, 0)

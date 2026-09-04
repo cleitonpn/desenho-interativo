@@ -1,4 +1,4 @@
-import { CURVA_PRETO } from '../config/marca'
+import { CURVA_BRANCO, CURVA_PRETO } from '../config/marca'
 
 /**
  * Define o filtro que a versão em preto usa. Fica montado uma vez na raiz do
@@ -13,9 +13,7 @@ import { CURVA_PRETO } from '../config/marca'
  */
 export function FiltrosSvg() {
   const tabela = CURVA_PRETO.join(' ')
-  // Espelhar a curva inverte os papéis: o traço clareia e a máscara escurece,
-  // que é exatamente o que uma estampa sobre tecido escuro precisa.
-  const tabelaClara = [...CURVA_PRETO].map((v) => 1 - v).join(' ')
+  const tabelaClara = CURVA_BRANCO.join(' ')
   return (
     <svg aria-hidden className="absolute w-0 h-0 pointer-events-none" focusable="false">
       <defs>

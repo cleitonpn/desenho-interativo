@@ -27,6 +27,26 @@ service cloud.firestore {
       allow write: if ehAdmin();
     }
 
+    // Conteudo do estudio: a bio, as fotos e a galeria. Todo mundo le; so o
+    // Vital escreve.
+    match /conteudo/{id} {
+      allow read: if true;
+      allow write: if ehAdmin();
+    }
+    match /tattoos/{id} {
+      allow read: if true;
+      allow write: if ehAdmin();
+    }
+    match /produtos/{id} {
+      allow read: if true;
+      allow write: if ehAdmin();
+    }
+
+    // Progresso pessoal: so a propria pessoa mexe no seu.
+    match /progresso/{uid} {
+      allow read, write: if dono(uid);
+    }
+
     // Telemetria. Qualquer pessoa logada soma nos contadores; so o Vital le.
     // Os documentos nao guardam nada que identifique alguem alem do uid da
     // sessao, e ninguem pode ler o que os outros fizeram.

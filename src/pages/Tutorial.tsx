@@ -38,7 +38,7 @@ export function Tutorial() {
 
   function avancar() {
     if (passo < PASSOS.length - 1) setPasso(passo + 1)
-    else { localStorage.setItem('quintal:tutorial', 'visto'); navegar('/montar') }
+    else { localStorage.setItem('quintal:tutorial', 'visto'); navegar('/inicio') }
   }
 
   const atual = PASSOS[passo]
@@ -52,7 +52,7 @@ export function Tutorial() {
               i === passo ? 'w-7 bg-brand' : 'w-1.5 bg-line'}`} />
           ))}
         </div>
-        <button onClick={() => { localStorage.setItem('quintal:tutorial', 'visto'); navegar('/montar') }}
+        <button onClick={() => { localStorage.setItem('quintal:tutorial', 'visto'); navegar('/inicio') }}
                 className="etiqueta hover:text-ink transition-colors">Pular</button>
       </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Check, Dices, Eraser, Images, Loader2, Save, Scan, Send, UserRound, X } from 'lucide-react'
 import { CORES, CORES_DO_EDITOR, MARCA, type CorId } from '../config/marca'
 import { Galinha } from '../components/Galinha'
@@ -13,12 +13,16 @@ import { useAuth } from '../contexts/AuthContext'
 import {
   iniciarSessao, registrarAcao, registrarConjunto, registrarPeca,
 } from '../lib/telemetria'
+import { registrarDescoberta, registrarMarco } from '../lib/progresso'
 import type { Catalogo, Escolhas, SlotId } from '../lib/tipos'
 
 export function Editor() {
   const { usuario, perfil } = useAuth()
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
-  const [escolhas, setEscolhas] = useState<Escolhas>({})
+  // A galinha do dia chega pela navegação: abrir o editor já com ela montada
+  // evita pedir para a pessoa refazer o que acabou de ver.
+  const inicial = (useLocation().state as { escolhas?: Escolhas } | null)?.escolhas
+  const [escolhas, setEscolhas] = useState<Escolhas>(inicial ?? {})
   const [cor, setCor] = useState<CorId>('vermelho')
   const [slotAberto, setSlotAberto] = useState<SlotId | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -41,7 +45,11 @@ export function Editor() {
       // "descarte" é a peça que a pessoa vestiu e tirou: diz tanto quanto a
       // escolhida, porque marca o que atraiu mas não convenceu.
       if (tirando) { registrarPeca(id, slot, 'descartes'); registrarAcao('remocao') }
-      else { registrarPeca(id, slot, 'escolhas'); registrarAcao('escolha_manual') }
+      else {
+        registrarPeca(id, slot, 'escolhas')
+        registrarAcao('escolha_manual')
+        if (usuario) void registrarDescoberta(usuario.uid, [id])
+      }
       return { ...e, [slot]: tirando ? undefined : id }
     })
     setSalvo(false)
@@ -54,6 +62,7 @@ export function Editor() {
       await salvarCriacao(usuario.uid, perfil?.nome ?? 'Alguém', escolhas, cor)
       registrarAcao('salvamento')
       registrarConjunto(escolhas, 'salvamentos')
+      void registrarMarco(usuario.uid, 'salvas')
       setSalvo(true)
       setTimeout(() => setSalvo(false), 2400)
     } finally {
@@ -74,7 +83,7 @@ export function Editor() {
     // no espaco e a galinha, que encolhe quando a bandeja de pecas abre.
     <div className="h-dvh overflow-hidden flex flex-col">
       <header className="safe-top px-4 pt-3 pb-2 flex items-center justify-between shrink-0">
-        <span className="font-display text-lg">{MARCA.nome}</span>
+        <Link to="/inicio" className="font-display text-lg">{MARCA.nome}</Link>
         <div className="flex items-center gap-2">
           <SeletorDeCor cor={cor} aoTrocar={setCor} />
           <button onClick={() => { registrarAcao('limpeza'); setEscolhas({}); setSalvo(false) }}
@@ -103,6 +112,7 @@ export function Editor() {
                   const sorteada = sortear(catalogo)
                   registrarAcao('sorteio')
                   registrarConjunto(sorteada, 'escolhas')
+                  if (usuario) void registrarDescoberta(usuario.uid, Object.values(sorteada).filter(Boolean) as string[])
                   setEscolhas(sorteada); setSalvo(false)
                 }} className="botao-neutro !px-4 !py-2.5 shrink-0">
           <Dices size={18} /> Sortear

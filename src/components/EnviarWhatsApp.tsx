@@ -8,6 +8,7 @@ import { baixarCanvas, canvasParaBlob, renderizar } from '../lib/exportar'
 import { linkWhatsApp, podeCompartilharArquivo } from '../lib/whatsapp'
 import { useAuth } from '../contexts/AuthContext'
 import { registrarAcao, registrarConjunto } from '../lib/telemetria'
+import { registrarMarco } from '../lib/progresso'
 import type { Catalogo, Escolhas } from '../lib/tipos'
 
 interface Props {
@@ -44,6 +45,7 @@ export function EnviarWhatsApp({ catalogo, escolhas, cor, aoFechar }: Props) {
       const url = await getDownloadURL(destino)
       registrarAcao('whatsapp')
       registrarConjunto(escolhas, 'levadas')
+      void registrarMarco(usuario.uid, 'enviadas')
       window.open(linkWhatsApp(itens, CORES[cor].rotulo, url), '_blank')
     } catch {
       // Se o upload falhar, ainda vale abrir a conversa só com o texto.

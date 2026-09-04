@@ -12,6 +12,10 @@ import { Conta } from './pages/Conta'
 import { CompletarCadastro } from './pages/CompletarCadastro'
 import { VerificarEmail } from './pages/VerificarEmail'
 import { Privacidade } from './pages/Privacidade'
+import { Inicio } from './pages/Inicio'
+import { Sobre } from './pages/Sobre'
+import { Tattoos } from './pages/Tattoos'
+import { Loja } from './pages/Loja'
 // O painel só interessa ao Vital: carregado à parte para não pesar no
 // carregamento de quem entrou para montar uma galinha.
 const Admin = lazy(() =>
@@ -30,7 +34,11 @@ export default function App() {
         <Route path="/completar" element={<PrecisaPerfil />} />
         <Route path="/verificar" element={<PrecisaVerificar />} />
         <Route path="/tutorial" element={<Protegida><Tutorial /></Protegida>} />
+        <Route path="/inicio" element={<Protegida><Inicio /></Protegida>} />
         <Route path="/montar" element={<Protegida><Editor /></Protegida>} />
+        <Route path="/loja" element={<Protegida><Loja /></Protegida>} />
+        <Route path="/tattoos" element={<Protegida><Tattoos /></Protegida>} />
+        <Route path="/sobre" element={<Protegida><Sobre /></Protegida>} />
         <Route path="/minhas" element={<Protegida><MinhasGalinhas /></Protegida>} />
         <Route path="/conta" element={<Protegida><Conta /></Protegida>} />
         <Route path="/vital" element={
@@ -65,7 +73,7 @@ function PrecisaVerificar() {
   const { usuario, carregando, emailVerificado, temSenha } = useAuth()
   if (carregando) return <Espera />
   if (!usuario) return <Navigate to="/entrar" replace />
-  if (emailVerificado || !temSenha) return <Navigate to="/montar" replace />
+  if (emailVerificado || !temSenha) return <Navigate to="/inicio" replace />
   return <VerificarEmail />
 }
 
@@ -74,7 +82,7 @@ function PrecisaPerfil() {
   const { usuario, perfil, carregando } = useAuth()
   if (carregando) return <Espera />
   if (!usuario) return <Navigate to="/entrar" replace />
-  if (perfil) return <Navigate to="/montar" replace />
+  if (perfil) return <Navigate to="/inicio" replace />
   return <CompletarCadastro />
 }
 
@@ -86,5 +94,5 @@ function SoVisitante({ children }: { children: ReactNode }) {
   if (!perfil) return <Navigate to="/completar" replace />
   if (temSenha && !emailVerificado) return <Navigate to="/verificar" replace />
   const viuTutorial = localStorage.getItem('quintal:tutorial') === 'visto'
-  return <Navigate to={viuTutorial ? '/montar' : '/tutorial'} replace />
+  return <Navigate to={viuTutorial ? '/inicio' : '/tutorial'} replace />
 }

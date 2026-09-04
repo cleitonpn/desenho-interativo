@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -10,7 +11,10 @@ import { MinhasGalinhas } from './pages/MinhasGalinhas'
 import { Conta } from './pages/Conta'
 import { CompletarCadastro } from './pages/CompletarCadastro'
 import { VerificarEmail } from './pages/VerificarEmail'
-import { Admin } from './pages/admin/Admin'
+// O painel só interessa ao Vital: carregado à parte para não pesar no
+// carregamento de quem entrou para montar uma galinha.
+const Admin = lazy(() =>
+  import('./pages/admin/Admin').then((m) => ({ default: m.Admin })))
 import type { ReactNode } from 'react'
 
 export default function App() {
@@ -26,7 +30,9 @@ export default function App() {
         <Route path="/montar" element={<Protegida><Editor /></Protegida>} />
         <Route path="/minhas" element={<Protegida><MinhasGalinhas /></Protegida>} />
         <Route path="/conta" element={<Protegida><Conta /></Protegida>} />
-        <Route path="/vital" element={<Protegida><Admin /></Protegida>} />
+        <Route path="/vital" element={
+          <Protegida><Suspense fallback={<Espera />}><Admin /></Suspense></Protegida>
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

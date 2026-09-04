@@ -17,9 +17,17 @@ export function carregarImagem(src: string): Promise<HTMLImageElement> {
   })
 }
 
-/** Deixa as peças prontas em memória para o editor não piscar ao trocar item. */
-export function preAquecer(catalogo: Catalogo): void {
-  for (const p of catalogo.pecas) void carregarImagem(caminhoDaPeca(p)).catch(() => {})
+/**
+ * Adianta o que vai aparecer agora. Antes isto pedia as 100 peças de uma vez —
+ * 3,7 MB em paralelo assim que o editor abria, o que num 4G engasga a página
+ * inteira para adiantar imagens que a pessoa talvez nunca abra.
+ *
+ * O navegador já baixa as miniaturas quando o slot é aberto, e a peça vestida
+ * vem dessa mesma cache. Então basta garantir a base e o que está em cena.
+ */
+export function preAquecer(catalogo: Catalogo, escolhas: Escolhas = {}): void {
+  const emCena = camadasEmOrdem(catalogo, escolhas)
+  for (const p of emCena) void carregarImagem(caminhoDaPeca(p)).catch(() => {})
 }
 
 interface OpcoesExport {

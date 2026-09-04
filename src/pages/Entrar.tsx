@@ -26,9 +26,13 @@ export function Entrar() {
     e.preventDefault()
     setErro(''); setOcupado(true)
     try {
-      if (criando) await criarConta(email, senha, dados)
-      else await entrarComEmail(email, senha)
-      navegar('/tutorial')
+      if (criando) {
+        await criarConta(email, senha, dados)
+        navegar('/verificar')
+      } else {
+        await entrarComEmail(email, senha)
+        navegar('/tutorial')
+      }
     } catch (err) {
       setErro(traduzir(err))
       setOcupado(false)

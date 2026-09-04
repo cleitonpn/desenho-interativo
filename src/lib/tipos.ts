@@ -57,5 +57,7 @@ export interface Perfil {
   nascimento: string
   jaFezArte: boolean
   criadoEm: number
+  /** Confirmou o link enviado por e-mail. Contas do Google já entram assim. */
+  emailVerificado?: boolean
   admin?: boolean
 }

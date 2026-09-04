@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import {
   EmailAuthProvider, createUserWithEmailAndPassword, onAuthStateChanged,
-  reauthenticateWithCredential, signInWithEmailAndPassword, signInWithPopup,
-  signOut, updatePassword, type User,
+  reauthenticateWithCredential, sendEmailVerification, signInWithEmailAndPassword,
+  signInWithPopup, signOut, updatePassword, type User,
 } from 'firebase/auth'
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db, googleProvider } from '../lib/firebase'
@@ -34,6 +34,11 @@ interface Ctx {
   trocarSenha: (atual: string, nova: string) => Promise<void>
   /** Contas do Google não têm senha para trocar aqui. */
   temSenha: boolean
+  /** Contas do Google já chegam com o e-mail confirmado pelo Google. */
+  emailVerificado: boolean
+  reenviarVerificacao: () => Promise<void>
+  /** Recheca no servidor se a pessoa já clicou no link. */
+  conferirVerificacao: () => Promise<boolean>
   sair: () => Promise<void>
 }
 
@@ -81,6 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async criarConta(email, senha, dados) {
       const cred = await createUserWithEmailAndPassword(auth, email, senha)
       await gravarPerfil(cred.user, dados)
+      // Sem isso, o mailing enche de endereço que não existe.
+      await sendEmailVerification(cred.user)
     },
     /** Devolve true se o perfil já existe; false se ainda falta completar. */
     async entrarComGoogle() {
@@ -112,6 +119,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await updatePassword(u, nova)
     },
     temSenha: usuario?.providerData.some((p) => p.providerId === 'password') ?? false,
+    emailVerificado: usuario?.emailVerified ?? false,
+    async reenviarVerificacao() {
+      if (!auth.currentUser) throw new Error('Ninguém está logado.')
+      await sendEmailVerification(auth.currentUser)
+    },
+    /**
+     * O objeto de usuário guarda o estado de quando entrou; clicar no link não
+     * avisa a aba aberta. Só um reload do servidor mostra a mudança.
+     */
+    async conferirVerificacao() {
+      const u = auth.currentUser
+      if (!u) return false
+      await u.reload()
+      if (u.emailVerified) {
+        await setDoc(doc(db, 'usuarios', u.uid), { emailVerificado: true }, { merge: true })
+        setUsuario({ ...u } as User)
+      }
+      return u.emailVerified
+    },
     async sair() {
       await signOut(auth)
     },

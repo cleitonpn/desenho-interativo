@@ -64,9 +64,11 @@ function AbaMailing({ perfis }: { perfis: Perfil[] | null }) {
 
   /** Exporta em CSV para o Vital abrir no Excel ou subir numa ferramenta de e-mail. */
   function baixarCsv() {
-    const cabecalho = ['Nome', 'E-mail', 'WhatsApp', 'Cidade', 'Nascimento', 'Já fez arte']
+    const cabecalho = ['Nome', 'E-mail', 'E-mail confirmado', 'WhatsApp', 'Cidade',
+                       'Nascimento', 'Já fez arte']
     const linhas = perfis!.map((p) => [
-      p.nome, p.email, p.whatsapp, p.cidade, p.nascimento, p.jaFezArte ? 'Sim' : 'Não',
+      p.nome, p.email, p.emailVerificado ? 'Sim' : 'Não',
+      p.whatsapp, p.cidade, p.nascimento, p.jaFezArte ? 'Sim' : 'Não',
     ].map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
     const blob = new Blob(['﻿' + [cabecalho.join(','), ...linhas].join('\n')], {
       type: 'text/csv;charset=utf-8',
@@ -91,7 +93,7 @@ function AbaMailing({ perfis }: { perfis: Perfil[] | null }) {
         <table className="w-full text-sm">
           <thead className="border-b-2 border-ink/10">
             <tr className="text-left">
-              {['Nome', 'E-mail', 'WhatsApp', 'Cidade', 'Nasc.', 'Cliente'].map((h) => (
+              {['Nome', 'E-mail', 'OK', 'WhatsApp', 'Cidade', 'Nasc.', 'Cliente'].map((h) => (
                 <th key={h} className="etiqueta px-4 py-3 whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -101,6 +103,9 @@ function AbaMailing({ perfis }: { perfis: Perfil[] | null }) {
               <tr key={p.uid} className="border-b border-line last:border-0">
                 <td className="px-4 py-3 font-medium whitespace-nowrap">{p.nome}</td>
                 <td className="px-4 py-3 text-muted whitespace-nowrap">{p.email}</td>
+                <td className="px-4 py-3" title={p.emailVerificado ? 'E-mail confirmado' : 'Ainda não confirmou'}>
+                  {p.emailVerificado ? '✅' : '⚠️'}
+                </td>
                 <td className="px-4 py-3 text-muted whitespace-nowrap">{p.whatsapp}</td>
                 <td className="px-4 py-3 text-muted whitespace-nowrap">{p.cidade}</td>
                 <td className="px-4 py-3 text-muted whitespace-nowrap">{p.nascimento}</td>

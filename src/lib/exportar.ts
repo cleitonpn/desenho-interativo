@@ -84,7 +84,7 @@ export async function renderizar(
   // A conversao para preto e feita pixel a pixel, e nao por ctx.filter, porque
   // filtro por url() nao e confiavel fora do Chrome — e esta e a imagem que a
   // pessoa leva para tatuar.
-  if (cor === 'preto') aplicarPreto(ctx, canvas.width, canvas.height)
+  if (cor === 'preto' || cor === 'branco') aplicarCurva(ctx, canvas.width, canvas.height, cor === 'branco')
 
   if (!semAssinatura) {
     const tamanho = Math.round(rodape * escala * 0.32)
@@ -102,13 +102,15 @@ export async function renderizar(
  * Mesma curva do filtro da tela, aplicada no bitmap. Roda uma vez por
  * exportacao, entao o custo nao aparece.
  */
-function aplicarPreto(ctx: CanvasRenderingContext2D, largura: number, altura: number): void {
+function aplicarCurva(
+  ctx: CanvasRenderingContext2D, largura: number, altura: number, invertida: boolean,
+): void {
   const dados = ctx.getImageData(0, 0, largura, altura)
   const px = dados.data
   for (let i = 0; i < px.length; i += 4) {
     if (px[i + 3] === 0) continue
     const lum = px[i] * LUMINANCIA.r + px[i + 1] * LUMINANCIA.g + px[i + 2] * LUMINANCIA.b
-    const v = curvaPreto(lum)
+    const v = curvaPreto(lum, invertida)
     px[i] = px[i + 1] = px[i + 2] = v
   }
   ctx.putImageData(dados, 0, 0)

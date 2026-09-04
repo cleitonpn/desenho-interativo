@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, Dices, Eraser, Images, Loader2, Save, Scan, Send, UserRound, X } from 'lucide-react'
-import { CORES, MARCA, type CorId } from '../config/marca'
+import { CORES, CORES_DO_EDITOR, MARCA, type CorId } from '../config/marca'
 import { Galinha } from '../components/Galinha'
 import { ProvaNaPele } from '../components/ProvaNaPele'
 import { EnviarWhatsApp } from '../components/EnviarWhatsApp'
@@ -148,7 +148,7 @@ function SeletorDeCor({ cor, aoTrocar }: { cor: CorId; aoTrocar: (c: CorId) => v
   const trocar = (id: CorId) => { if (id !== cor) registrarAcao('troca_cor'); aoTrocar(id) }
   return (
     <div className="flex gap-1 p-1 rounded-full border-2 border-ink/15 bg-surface">
-      {(Object.keys(CORES) as CorId[]).map((id) => (
+      {CORES_DO_EDITOR.map((id) => (
         <button key={id} onClick={() => trocar(id)} aria-label={`Versão ${CORES[id].rotulo}`}
           className={`w-7 h-7 rounded-full border-2 transition-transform ${
             cor === id ? 'border-ink scale-100' : 'border-transparent scale-90 opacity-60'}`}

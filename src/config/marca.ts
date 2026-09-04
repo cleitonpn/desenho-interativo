@@ -39,18 +39,39 @@ export const CURVA_PRETO = [0, 0.07, 0.3, 0.55, 1] as const
 export const LUMINANCIA = { r: 0.213, g: 0.715, b: 0.072 } as const
 
 /** Aplica CURVA_PRETO a um valor 0..255, interpolando entre os pontos. */
-export function curvaPreto(valor: number): number {
+export function curvaPreto(valor: number, invertida = false): number {
   const x = (valor / 255) * (CURVA_PRETO.length - 1)
   const i = Math.min(Math.floor(x), CURVA_PRETO.length - 2)
   const t = x - i
-  return (CURVA_PRETO[i] + (CURVA_PRETO[i + 1] - CURVA_PRETO[i]) * t) * 255
+  const v = CURVA_PRETO[i] + (CURVA_PRETO[i + 1] - CURVA_PRETO[i]) * t
+  return (invertida ? 1 - v : v) * 255
 }
 
-/** As duas versoes de cor do desenho. O preto sai do mesmo PNG vermelho: em
- *  nenhum momento um acessorio precisa existir duas vezes. */
+/**
+ * As versoes de cor do desenho, todas saindo do mesmo PNG vermelho: em nenhum
+ * momento um acessorio precisa existir duas vezes.
+ *
+ * 'branco' e a curva do preto espelhada, para estampa sobre tecido escuro — o
+ * traco clareia e a mascara, que no papel e branca, escurece para continuar
+ * escondendo o que esta embaixo. Sem ela, galinha preta em camiseta preta
+ * simplesmente some.
+ */
 export const CORES = {
   vermelho: { id: 'vermelho', rotulo: 'Vermelho', filtro: 'none', amostra: '#FF1A0E' },
   preto: { id: 'preto', rotulo: 'Preto', filtro: 'url(#quintal-preto)', amostra: '#1B1B1B' },
+  branco: { id: 'branco', rotulo: 'Branco', filtro: 'url(#quintal-branco)', amostra: '#F2F2F2' },
 } as const
 
 export type CorId = keyof typeof CORES
+
+/** As duas que a pessoa escolhe no editor. A branca so existe sobre escuro. */
+export const CORES_DO_EDITOR = ['vermelho', 'preto'] as const
+
+/**
+ * Sobre tecido escuro, o traco preto desaparece — troca sozinho para o branco.
+ * O vermelho aguenta os dois fundos e fica como esta.
+ */
+export function corSobreTecido(cor: CorId, tecidoEscuro: boolean): CorId {
+  if (!tecidoEscuro) return cor === 'branco' ? 'preto' : cor
+  return cor === 'preto' ? 'branco' : cor
+}

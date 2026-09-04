@@ -13,6 +13,9 @@ import { CURVA_PRETO } from '../config/marca'
  */
 export function FiltrosSvg() {
   const tabela = CURVA_PRETO.join(' ')
+  // Espelhar a curva inverte os papéis: o traço clareia e a máscara escurece,
+  // que é exatamente o que uma estampa sobre tecido escuro precisa.
+  const tabelaClara = [...CURVA_PRETO].map((v) => 1 - v).join(' ')
   return (
     <svg aria-hidden className="absolute w-0 h-0 pointer-events-none" focusable="false">
       <defs>
@@ -22,6 +25,14 @@ export function FiltrosSvg() {
             <feFuncR type="table" tableValues={tabela} />
             <feFuncG type="table" tableValues={tabela} />
             <feFuncB type="table" tableValues={tabela} />
+          </feComponentTransfer>
+        </filter>
+        <filter id="quintal-branco" colorInterpolationFilters="sRGB">
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncR type="table" tableValues={tabelaClara} />
+            <feFuncG type="table" tableValues={tabelaClara} />
+            <feFuncB type="table" tableValues={tabelaClara} />
           </feComponentTransfer>
         </filter>
       </defs>

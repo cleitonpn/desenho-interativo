@@ -2,10 +2,10 @@ import { useMemo } from 'react'
 import { CORES, type CorId } from '../config/marca'
 import { caminhoDaPeca } from '../lib/catalogo'
 import { camadasEmOrdem } from '../lib/composicao'
-import type { Catalogo, Escolhas } from '../lib/tipos'
+import type { Escolhas, Personagem } from '../lib/tipos'
 
 interface Props {
-  catalogo: Catalogo
+  personagem: Personagem
   escolhas: Escolhas
   cor: CorId
   className?: string
@@ -18,22 +18,22 @@ interface Props {
 }
 
 /**
- * Empilha os PNGs em posição absoluta. Como todas as peças foram recortadas
+ * Desenha um personagem montado: empilha os PNGs em posição absoluta. Como todas as peças foram recortadas
  * guardando o offset original, o encaixe sai do próprio dado — não há nenhum
  * ajuste manual por acessório.
  */
-export function Galinha({ catalogo, escolhas, cor, className = '', ajustado = false }: Props) {
-  const camadas = useMemo(() => camadasEmOrdem(catalogo, escolhas), [catalogo, escolhas])
+export function Desenho({ personagem, escolhas, cor, className = '', ajustado = false }: Props) {
+  const camadas = useMemo(() => camadasEmOrdem(personagem, escolhas), [personagem, escolhas])
 
   const vista = useMemo(() => {
-    if (!ajustado) return catalogo.enquadramento
+    if (!ajustado) return personagem.enquadramento
     const x0 = Math.min(...camadas.map((p) => p.x))
     const y0 = Math.min(...camadas.map((p) => p.y))
     const x1 = Math.max(...camadas.map((p) => p.x + p.w))
     const y1 = Math.max(...camadas.map((p) => p.y + p.h))
     const folga = (x1 - x0) * 0.08
     return { x: x0 - folga, y: y0 - folga, w: x1 - x0 + folga * 2, h: y1 - y0 + folga * 2 }
-  }, [camadas, catalogo.enquadramento, ajustado])
+  }, [camadas, personagem.enquadramento, ajustado])
 
   return (
     <div

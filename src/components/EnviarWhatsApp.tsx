@@ -9,29 +9,29 @@ import { linkWhatsApp, podeCompartilharArquivo } from '../lib/whatsapp'
 import { useAuth } from '../contexts/AuthContext'
 import { registrarAcao, registrarConjunto } from '../lib/telemetria'
 import { registrarMarco } from '../lib/progresso'
-import type { Catalogo, Escolhas } from '../lib/tipos'
+import type { Escolhas, Personagem } from '../lib/tipos'
 
 interface Props {
-  catalogo: Catalogo
+  personagem: Personagem
   escolhas: Escolhas
   cor: CorId
   aoFechar: () => void
 }
 
-export function EnviarWhatsApp({ catalogo, escolhas, cor, aoFechar }: Props) {
+export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
   const { usuario } = useAuth()
   const [previa, setPrevia] = useState<string | null>(null)
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState('')
 
-  const itens = descrever(catalogo, escolhas)
+  const itens = descrever(personagem, escolhas)
 
   useEffect(() => {
-    renderizar(catalogo, escolhas, cor, { largura: 1400 })
+    renderizar(personagem, escolhas, cor, { largura: 1400 })
       .then((c) => { setCanvas(c); setPrevia(c.toDataURL('image/png')) })
       .catch(() => setErro('Não consegui gerar a imagem.'))
-  }, [catalogo, escolhas, cor])
+  }, [personagem, escolhas, cor])
 
   /** Sobe a imagem e abre o WhatsApp com o texto e o link já montados. */
   async function mandar() {

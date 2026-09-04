@@ -1,7 +1,7 @@
 import { arrayUnion, doc, getDoc, increment, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
-import type { Catalogo, Escolhas, SlotId } from './tipos'
-import { SLOTS, pecasDoSlot } from './catalogo'
+import type { Escolhas, Personagem, SlotId } from './tipos'
+import { pecasDoSlot, slotsDisponiveis } from './catalogo'
 
 /**
  * O progresso de cada pessoa. Diferente da telemetria — que soma todo mundo
@@ -78,29 +78,31 @@ export async function registrarMarco(
   } catch { /* idem */ }
 }
 
-export function totalDePecas(catalogo: Catalogo): number {
-  return catalogo.pecas.filter((p) => p.slot !== 'base' && !p.oculta).length
+/** Quantos acessórios existem ao todo, somando os personagens visíveis. */
+export function totalDePecas(personagens: Personagem[]): number {
+  return personagens.reduce(
+    (t, p) => t + p.pecas.filter((x) => x.slot !== 'base' && !x.oculta).length, 0)
 }
 
 /**
- * A galinha do dia. A semente vem da data, entao todo mundo ve a mesma e ela
+ * O desenho do dia. A semente vem da data, entao todo mundo ve a mesma e ela
  * muda sozinha a meia-noite — um motivo de voltar que nao depende de notificar
  * ninguem.
  */
-export function galinhaDoDia(catalogo: Catalogo, data = new Date()): Escolhas {
+export function desenhoDoDia(personagem: Personagem, data = new Date()): Escolhas {
   const semente = Number(
     `${data.getFullYear()}${String(data.getMonth() + 1).padStart(2, '0')}${String(data.getDate()).padStart(2, '0')}`,
   )
   let estado = semente % 2147483647
   const rnd = () => { estado = (estado * 16807) % 2147483647; return estado / 2147483647 }
 
-  const disponiveis = SLOTS.map((s) => s.id).filter((s) => pecasDoSlot(catalogo, s).length > 0)
+  const disponiveis = slotsDisponiveis(personagem).map((s) => s.id)
   const quantos = 4 + Math.floor(rnd() * 3)
   const escolhidos = [...disponiveis].sort(() => rnd() - 0.5).slice(0, quantos)
 
   const escolhas: Escolhas = {}
   for (const slot of escolhidos) {
-    const opcoes = pecasDoSlot(catalogo, slot as SlotId)
+    const opcoes = pecasDoSlot(personagem, slot as SlotId)
     escolhas[slot as SlotId] = opcoes[Math.floor(rnd() * opcoes.length)].id
   }
   return escolhas

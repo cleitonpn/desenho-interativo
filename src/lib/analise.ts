@@ -115,7 +115,9 @@ export async function carregarAnalise(catalogo: Catalogo): Promise<Analise> {
 
   // Toda peça do catálogo entra, inclusive com zero — as que ninguém usa são
   // metade da informação.
-  const visiveis = catalogo.pecas.filter((p) => p.slot !== 'base' && !p.oculta)
+  const visiveis: Peca[] = catalogo.personagens
+    .filter((pers) => !pers.oculto)
+    .flatMap((pers) => pers.pecas.filter((p) => p.slot !== 'base' && !p.oculta))
   const pecas: PecaComTaxas[] = visiveis.map((p) => {
     const m = porPeca.get(p.id) ?? {
       peca: p.id, slot: p.slot as SlotId, escolhas: 0, salvamentos: 0, levadas: 0, descartes: 0,

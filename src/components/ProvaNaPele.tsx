@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Camera, Download, Loader2, RotateCw, X } from 'lucide-react'
 import type { CorId } from '../config/marca'
 import { renderizar } from '../lib/exportar'
-import type { Catalogo, Escolhas } from '../lib/tipos'
+import type { Escolhas, Personagem } from '../lib/tipos'
 
 interface Props {
-  catalogo: Catalogo
+  personagem: Personagem
   escolhas: Escolhas
   cor: CorId
   aoFechar: () => void
@@ -19,7 +19,7 @@ interface Transformacao { x: number; y: number; escala: number; giro: number }
  * `multiply` e com um pouco de transparência, que é o que faz o traço parecer
  * pigmento na pele em vez de adesivo colado por cima.
  */
-export function ProvaNaPele({ catalogo, escolhas, cor, aoFechar }: Props) {
+export function ProvaNaPele({ personagem, escolhas, cor, aoFechar }: Props) {
   const [foto, setFoto] = useState<string | null>(null)
   const [desenho, setDesenho] = useState<string | null>(null)
   const [t, setT] = useState<Transformacao>({ x: 50, y: 50, escala: 40, giro: 0 })
@@ -28,10 +28,10 @@ export function ProvaNaPele({ catalogo, escolhas, cor, aoFechar }: Props) {
   const gesto = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null)
 
   useEffect(() => {
-    renderizar(catalogo, escolhas, cor, { largura: 900, semAssinatura: true, transparente: true })
+    renderizar(personagem, escolhas, cor, { largura: 900, semAssinatura: true, transparente: true })
       .then((c) => setDesenho(c.toDataURL('image/png')))
       .catch(() => {})
-  }, [catalogo, escolhas, cor])
+  }, [personagem, escolhas, cor])
 
   function abrirFoto(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivo = e.target.files?.[0]

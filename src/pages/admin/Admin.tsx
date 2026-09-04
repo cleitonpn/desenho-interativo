@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { ArrowLeft, Download, EyeOff, Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import {
+  ArrowLeft, Download, EyeOff, Loader2, PawPrint, Pencil, Plus, Trash2, Users,
+} from 'lucide-react'
 import { db } from '../../lib/firebase'
-import { Galinha } from '../../components/Galinha'
-import { SLOTS, carregarCatalogo, caminhoDaPeca, limparCacheDoCatalogo } from '../../lib/catalogo'
+import { Desenho } from '../../components/Desenho'
+import {
+  SLOTS, acharPersonagem, carregarCatalogo, caminhoDaPeca, limparCacheDoCatalogo,
+  personagensVisiveis,
+} from '../../lib/catalogo'
 import { ajustarPeca, removerPecaRemota, type PecaRemota } from '../../lib/pecasRemotas'
 import { SubirPeca } from '../../components/SubirPeca'
+import { NovoPersonagem } from '../../components/NovoPersonagem'
 import { AbaGente } from './AbaGente'
 import { AbaEstudio } from './AbaEstudio'
 import { CORES } from '../../config/marca'
@@ -130,7 +136,8 @@ function AbaCriacoes({ criacoes, catalogo }: { criacoes: Criacao[] | null; catal
       {criacoes.map((c) => (
         <figure key={c.id} className="quadro">
           <div className="papel rounded p-2">
-            <Galinha catalogo={catalogo} escolhas={c.escolhas} cor={c.cor} ajustado className="w-full" />
+            <Desenho personagem={acharPersonagem(catalogo, c.personagem)}
+                     escolhas={c.escolhas} cor={c.cor} ajustado className="w-full" />
           </div>
           <figcaption className="etiqueta mt-2.5 truncate">{c.autorNome}</figcaption>
         </figure>
@@ -141,6 +148,7 @@ function AbaCriacoes({ criacoes, catalogo }: { criacoes: Criacao[] | null; catal
 
 function AbaPecas({ catalogo, aoMudar }: { catalogo: Catalogo | null; aoMudar: (c: Catalogo) => void }) {
   const [subindo, setSubindo] = useState(false)
+  const [criandoBicho, setCriandoBicho] = useState(false)
 
   if (!catalogo) return <Carregando />
 
@@ -154,30 +162,47 @@ function AbaPecas({ catalogo, aoMudar }: { catalogo: Catalogo | null; aoMudar: (
     <div className="space-y-7">
       <div className="flex items-start justify-between gap-4">
         <p className="text-muted text-sm max-w-lg">
-          {catalogo.pecas.length - 1} acessórios no ar. Os marcados como
-          <em> a confirmar</em> eu não consegui identificar sozinho — vale renomear.
+          {personagensVisiveis(catalogo).reduce((t, p) => t + p.pecas.length - 1, 0)} acessórios
+          no ar. Os marcados como <em>a confirmar</em> eu não consegui identificar sozinho.
         </p>
-        <button onClick={() => setSubindo(true)} className="botao-principal !py-2 !px-4 text-sm shrink-0">
-          <Plus size={16} /> Nova peça
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button onClick={() => setCriandoBicho(true)} className="botao-neutro !py-2 !px-4 text-sm">
+            <PawPrint size={16} /> Novo bicho
+          </button>
+          <button onClick={() => setSubindo(true)} className="botao-principal !py-2 !px-4 text-sm">
+            <Plus size={16} /> Nova peça
+          </button>
+        </div>
       </div>
 
-      {SLOTS.map((slot) => {
-        const pecas = catalogo.pecas.filter((p) => p.slot === slot.id)
-        if (!pecas.length) return null
-        return (
-          <section key={slot.id}>
-            <h2 className="etiqueta mb-3">{slot.emoji} {slot.rotulo} · {pecas.length}</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-              {pecas.map((p) => <CartaoPeca key={p.id} peca={p} aoMudar={recarregar} />)}
-            </div>
-          </section>
-        )
-      })}
+      {personagensVisiveis(catalogo).map((personagem) => (
+        <div key={personagem.id} className="space-y-6">
+          {personagensVisiveis(catalogo).length > 1 && (
+            <h2 className="font-display text-2xl border-b-2 border-ink/10 pb-2">{personagem.nome}</h2>
+          )}
+          {SLOTS.map((slot) => {
+            const pecas = personagem.pecas.filter((p) => p.slot === slot.id)
+            if (!pecas.length) return null
+            return (
+              <section key={slot.id}>
+                <h3 className="etiqueta mb-3">{slot.emoji} {slot.rotulo} · {pecas.length}</h3>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                  {pecas.map((p) => <CartaoPeca key={p.id} peca={p} aoMudar={recarregar} />)}
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      ))}
 
       {subindo && (
         <SubirPeca catalogo={catalogo} aoFechar={() => setSubindo(false)}
                    aoPublicar={async () => { setSubindo(false); await recarregar() }} />
+      )}
+      {criandoBicho && (
+        <NovoPersonagem quantosJaExistem={catalogo.personagens.length}
+                        aoFechar={() => setCriandoBicho(false)}
+                        aoCriar={async () => { setCriandoBicho(false); await recarregar() }} />
       )}
     </div>
   )

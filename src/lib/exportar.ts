@@ -1,7 +1,7 @@
 import { CORES, LUMINANCIA, MARCA, aplicarCurvaEm, curvaDaCor, type CorId } from '../config/marca'
 import { caminhoDaPeca } from './catalogo'
 import { camadasEmOrdem } from './composicao'
-import type { Catalogo, Escolhas } from './tipos'
+import type { Escolhas, Personagem } from './tipos'
 
 const cacheImg = new Map<string, HTMLImageElement>()
 
@@ -25,8 +25,8 @@ export function carregarImagem(src: string): Promise<HTMLImageElement> {
  * O navegador já baixa as miniaturas quando o slot é aberto, e a peça vestida
  * vem dessa mesma cache. Então basta garantir a base e o que está em cena.
  */
-export function preAquecer(catalogo: Catalogo, escolhas: Escolhas = {}): void {
-  const emCena = camadasEmOrdem(catalogo, escolhas)
+export function preAquecer(personagem: Personagem, escolhas: Escolhas = {}): void {
+  const emCena = camadasEmOrdem(personagem, escolhas)
   for (const p of emCena) void carregarImagem(caminhoDaPeca(p)).catch(() => {})
 }
 
@@ -44,13 +44,13 @@ interface OpcoesExport {
  * Uma galinha só de chapéu não vira uma imagem cheia de vazio embaixo.
  */
 export async function renderizar(
-  catalogo: Catalogo,
+  personagem: Personagem,
   escolhas: Escolhas,
   cor: CorId,
   opcoes: OpcoesExport = {},
 ): Promise<HTMLCanvasElement> {
   const { largura = 1600, semAssinatura = false, transparente = false } = opcoes
-  const camadas = camadasEmOrdem(catalogo, escolhas)
+  const camadas = camadasEmOrdem(personagem, escolhas)
 
   // Área ocupada por tudo que está em cena, com uma folga proporcional.
   const x0 = Math.min(...camadas.map((p) => p.x))

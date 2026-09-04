@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Galinha } from '../components/Galinha'
-import { carregarCatalogo } from '../lib/catalogo'
+import { Desenho } from '../components/Desenho'
+import { carregarCatalogo, personagemPadrao } from '../lib/catalogo'
 import type { Catalogo, Escolhas } from '../lib/tipos'
 
 /** O tutorial mostra o app funcionando em vez de descrevê-lo: a cada passo a
@@ -59,8 +59,8 @@ export function Tutorial() {
       <div className="flex-1 flex items-center justify-center py-6">
         <div className="papel moldura w-full max-w-xs p-5">
           {catalogo && (
-            <Galinha key={passo} catalogo={catalogo} escolhas={atual.escolhas} cor="vermelho"
-                     ajustado className="w-full animate-pop" />
+            <Desenho key={passo} personagem={personagemPadrao(catalogo)} escolhas={atual.escolhas}
+                     cor="vermelho" ajustado className="w-full animate-pop" />
           )}
         </div>
       </div>

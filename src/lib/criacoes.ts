@@ -32,10 +32,10 @@ export function primeiroNome(nome: string): string {
 }
 
 export async function salvarCriacao(
-  uid: string, autorNome: string, escolhas: Escolhas, cor: CorId,
+  uid: string, autorNome: string, escolhas: Escolhas, cor: CorId, personagem: string,
 ): Promise<string> {
   const ref = await addDoc(col, {
-    uid, autorNome: primeiroNome(autorNome), escolhas, cor,
+    uid, autorNome: primeiroNome(autorNome), personagem, escolhas, cor,
     publica: true, criadoEm: serverTimestamp(),
   })
   return ref.id
@@ -88,6 +88,7 @@ function paraCriacao(d: { id: string; data: () => Record<string, unknown> }): Cr
     id: d.id,
     uid: String(dados.uid ?? ''),
     autorNome: String(dados.autorNome ?? 'Alguém'),
+    personagem: dados.personagem ? String(dados.personagem) : undefined,
     escolhas: (dados.escolhas ?? {}) as Escolhas,
     cor: (dados.cor ?? 'vermelho') as CorId,
     publica: Boolean(dados.publica),

@@ -1,7 +1,7 @@
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore'
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { db, storage } from './firebase'
-import type { Peca, SlotId } from './tipos'
+import type { Peca, Personagem, SlotId } from './tipos'
 
 /**
  * Peças que o Vital sobe pelo painel. Elas vivem no Firestore e no Storage, e
@@ -44,6 +44,59 @@ export async function ajustarPeca(
 ): Promise<void> {
   const atualizada = { ...peca, ...mudancas }
   await setDoc(doc(db, COLECAO, paraDocId(peca.id)), atualizada, { merge: true })
+}
+
+/**
+ * Personagens que o Vital cria pelo painel. O Vital ja esta desenhando outros
+ * bichos alem da galinha, e cada um chega com o proprio canvas — por isso o
+ * personagem guarda as medidas dele em vez de herdar as de ninguem.
+ */
+export interface PersonagemRemoto extends Omit<Personagem, 'pecas'> {
+  caminhoStorage: string
+}
+
+export async function listarPersonagensRemotos(): Promise<PersonagemRemoto[]> {
+  try {
+    const snap = await getDocs(collection(db, 'personagens'))
+    return snap.docs.map((d) => ({ ...(d.data() as PersonagemRemoto), id: d.id }))
+  } catch {
+    return []
+  }
+}
+
+const ORDEM_PADRAO: Personagem['ordemCamadas'] = [
+  'base', 'meias', 'sapatos', 'roupa_baixo', 'roupa_cima',
+  'pescoco', 'bolsa', 'cabeca', 'olhos', 'extras',
+]
+
+/** Cria um personagem a partir do PNG do corpo. As pecas dele entram depois. */
+export async function criarPersonagem(
+  id: string, nome: string, ordem: number, arquivo: File,
+  medidas: Awaited<ReturnType<typeof prepararPeca>>,
+): Promise<PersonagemRemoto> {
+  const caminhoStorage = `pecas/${id}_base.png`
+  const destino = ref(storage, caminhoStorage)
+  await uploadBytes(destino, medidas.blob, { contentType: 'image/png' })
+  const url = await getDownloadURL(destino)
+
+  const personagem: PersonagemRemoto = {
+    id, nome, ordem, caminhoStorage, base: url, oculto: false,
+    canvas: { w: medidas.canvasW, h: medidas.canvasH },
+    // Provisório: o enquadramento é recalculado a cada carregamento a partir
+    // das peças que existirem, então ele acompanha o acervo crescendo.
+    enquadramento: { x: medidas.x, y: medidas.y, w: medidas.w, h: medidas.h },
+    ordemCamadas: ORDEM_PADRAO,
+  }
+  await setDoc(doc(db, 'personagens', id), personagem)
+
+  // A base também é uma peça: é ela que o compositor empilha por baixo.
+  await setDoc(doc(db, COLECAO, paraDocId(`${id}/corpo`)), {
+    id: `${id}/corpo`, personagem: id, slot: 'base', rotulo: nome,
+    arquivo: url, url, caminhoStorage,
+    x: medidas.x, y: medidas.y, w: medidas.w, h: medidas.h,
+    origem: arquivo.name, oculta: false,
+  })
+  return personagem
 }
 
 /**
@@ -91,17 +144,17 @@ export async function prepararPeca(arquivo: File): Promise<{
 }
 
 export async function publicarPeca(
-  slot: SlotId, rotulo: string, arquivo: File,
+  personagem: string, slot: SlotId, rotulo: string, arquivo: File,
   medidas: Awaited<ReturnType<typeof prepararPeca>>,
 ): Promise<PecaRemota> {
-  const chave = `${slot}/${gerarSlug(rotulo)}-${Date.now().toString(36)}`
-  const caminhoStorage = `pecas/${chave}.png`
+  const chave = `${personagem}/${slot}/${gerarSlug(rotulo)}-${Date.now().toString(36)}`
+  const caminhoStorage = `pecas/${chave.replace(/\//g, '_')}.png`
   const destino = ref(storage, caminhoStorage)
   await uploadBytes(destino, medidas.blob, { contentType: 'image/png' })
   const url = await getDownloadURL(destino)
 
   const peca: PecaRemota = {
-    id: chave, slot, rotulo, arquivo: url, url, caminhoStorage,
+    id: chave, personagem, slot, rotulo, arquivo: url, url, caminhoStorage,
     x: medidas.x, y: medidas.y, w: medidas.w, h: medidas.h,
     origem: arquivo.name, oculta: false,
   }

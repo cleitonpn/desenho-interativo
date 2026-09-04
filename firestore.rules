@@ -37,6 +37,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if ehAdmin();
     }
+    match /personagens/{id} {
+      allow read: if true;
+      allow write: if ehAdmin();
+    }
     match /produtos/{id} {
       allow read: if true;
       allow write: if ehAdmin();

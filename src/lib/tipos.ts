@@ -7,6 +7,8 @@ export type SlotId =
 
 export interface Peca {
   id: string
+  /** A quem esta peça pertence. Um chapéu de galinha não serve num gato. */
+  personagem: string
   slot: SlotId | 'base'
   arquivo: string
   /** Posicao e tamanho dentro do canvas original de 2480x3508. */
@@ -22,16 +24,32 @@ export interface Peca {
   oculta?: boolean
 }
 
-export interface Catalogo {
+/**
+ * Um personagem e um desenho-base com o proprio acervo de acessorios. O Vital
+ * comecou pela galinha e ja esta desenhando outros bichos, entao o catalogo
+ * nasce plural: cada personagem tem seu canvas, sua ordem de camadas e suas
+ * pecas, porque as medidas do PSD de um nao valem para o outro.
+ */
+export interface Personagem {
+  id: string
+  nome: string
+  /** Posição na lista de escolha. */
+  ordem: number
   canvas: { w: number; h: number }
   /**
-   * Recorte fixo que cobre todas as pecas do catalogo. E o enquadramento
-   * padrao do editor: mantem a galinha grande sem que ela mude de tamanho a
-   * cada acessorio trocado, o que aconteceria com um recorte dinamico.
+   * Recorte fixo que cobre todas as peças deste personagem. É o enquadramento
+   * do editor: mantém o desenho grande sem que ele mude de tamanho a cada
+   * acessório trocado.
    */
   enquadramento: { x: number; y: number; w: number; h: number }
   ordemCamadas: (SlotId | 'base')[]
+  base: string
   pecas: Peca[]
+  oculto?: boolean
+}
+
+export interface Catalogo {
+  personagens: Personagem[]
 }
 
 /** O que o cliente escolheu: no maximo um id de peca por slot. */
@@ -41,6 +59,8 @@ export interface Criacao {
   id: string
   uid: string
   autorNome: string
+  /** Criações antigas não têm; nesses casos vale a galinha, que era a única. */
+  personagem?: string
   escolhas: Escolhas
   cor: CorId
   criadoEm: number

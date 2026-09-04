@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Loader2, Trash2, UserRound } from 'lucide-react'
-import { Galinha } from '../components/Galinha'
-import { carregarCatalogo } from '../lib/catalogo'
+import { Desenho } from '../components/Desenho'
+import { acharPersonagem, carregarCatalogo } from '../lib/catalogo'
 import { apagarCriacao, minhasCriacoes } from '../lib/criacoes'
 import { useAuth } from '../contexts/AuthContext'
 import type { Catalogo, Criacao } from '../lib/tipos'
@@ -66,7 +66,8 @@ export function MinhasGalinhas() {
           {lista.map((c) => (
             <figure key={c.id} className="quadro">
               <div className="papel rounded p-2">
-                <Galinha catalogo={catalogo} escolhas={c.escolhas} cor={c.cor} ajustado className="w-full" />
+                <Desenho personagem={acharPersonagem(catalogo, c.personagem)}
+                         escolhas={c.escolhas} cor={c.cor} ajustado className="w-full" />
               </div>
               <figcaption className="flex items-center justify-between mt-2.5">
                 <span className="etiqueta">

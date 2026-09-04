@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flame, Images, Palette, ShoppingBag, Sparkle, UserRound } from 'lucide-react'
 import { MARCA } from '../config/marca'
-import { Galinha } from '../components/Galinha'
+import { Desenho } from '../components/Desenho'
 import { useAuth } from '../contexts/AuthContext'
-import { carregarCatalogo } from '../lib/catalogo'
+import { carregarCatalogo, personagemPadrao, personagensVisiveis } from '../lib/catalogo'
 import {
-  CONQUISTAS, carregarProgresso, galinhaDoDia, totalDePecas,
+  CONQUISTAS, carregarProgresso, desenhoDoDia, totalDePecas,
   VAZIO, type Progresso,
 } from '../lib/progresso'
 import type { Catalogo } from '../lib/tipos'
@@ -28,9 +28,16 @@ export function Inicio() {
     if (perfil?.uid) carregarProgresso(perfil.uid).then(setProgresso).catch(() => {})
   }, [perfil?.uid])
 
-  const total = catalogo ? totalDePecas(catalogo) : 0
+  const total = catalogo ? totalDePecas(personagensVisiveis(catalogo)) : 0
   const vistas = progresso.descobertas.length
-  const doDia = useMemo(() => (catalogo ? galinhaDoDia(catalogo) : null), [catalogo])
+  // O desenho do dia sorteia também o bicho, para a home não ser sempre galinha.
+  const doDia = useMemo(() => {
+    if (!catalogo) return null
+    const visiveis = personagensVisiveis(catalogo)
+    const dia = new Date().getDate()
+    const personagem = visiveis[dia % visiveis.length] ?? personagemPadrao(catalogo)
+    return { personagem, escolhas: desenhoDoDia(personagem) }
+  }, [catalogo])
 
   return (
     <div className="min-h-dvh safe-top safe-bottom">
@@ -71,13 +78,13 @@ export function Inicio() {
 
         <nav className="grid grid-cols-2 gap-3 mt-4">
           <Atalho para="/montar" cor="brand" icone={<Palette size={22} />}
-                  titulo="Montar galinha" texto="Escolha os acessórios" grande />
+                  titulo="Montar" texto="Escolha o bicho e os acessórios" grande />
           <Atalho para="/loja" icone={<ShoppingBag size={20} />}
                   titulo="Loja" texto="Camisetas e cerâmicas" />
           <Atalho para="/tattoos" icone={<Flame size={20} />}
                   titulo="Tattoos" texto="Trabalhos do Vital" />
           <Atalho para="/minhas" icone={<Images size={20} />}
-                  titulo="Minhas galinhas" texto="O que você já salvou" />
+                  titulo="Minhas criações" texto="O que você já salvou" />
           <Atalho para="/sobre" icone={<UserRound size={20} />}
                   titulo="Quem é o Vital" texto="A história do traço" />
         </nav>
@@ -85,16 +92,17 @@ export function Inicio() {
         {catalogo && doDia && (
           <section className="mt-4 moldura p-5">
             <p className="etiqueta flex items-center gap-1.5">
-              <Sparkle size={13} className="text-brand" /> A galinha de hoje
+              <Sparkle size={13} className="text-brand" /> {doDia.personagem.nome} de hoje
             </p>
             <div className="papel rounded-xl border-2 border-ink/10 mt-3 p-3 grid place-items-center">
-              <Galinha catalogo={catalogo} escolhas={doDia} cor="vermelho" ajustado
-                       className="w-40" />
+              <Desenho personagem={doDia.personagem} escolhas={doDia.escolhas} cor="vermelho"
+                       ajustado className="w-40" />
             </div>
             <p className="text-sm text-muted mt-3 leading-relaxed">
               Sorteada hoje para todo mundo. Amanhã é outra.
             </p>
-            <Link to="/montar" state={{ escolhas: doDia }} className="botao-neutro w-full mt-3 !py-2.5">
+            <Link to="/montar" state={{ escolhas: doDia.escolhas, personagem: doDia.personagem.id }}
+                  className="botao-neutro w-full mt-3 !py-2.5">
               Abrir essa no editor
             </Link>
           </section>

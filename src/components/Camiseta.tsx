@@ -1,10 +1,10 @@
 import { corSobreTecido } from '../config/marca'
 import { AREAS, CAMISETA_MM, CORES_CAMISETA, type AreaId, type Arte, type CorCamiseta } from '../lib/loja'
-import { Galinha } from './Galinha'
-import type { Catalogo } from '../lib/tipos'
+import { Desenho } from './Desenho'
+import type { Personagem } from '../lib/tipos'
 
 interface Props {
-  catalogo: Catalogo | null
+  personagem: Personagem | null
   cor: CorCamiseta
   area: AreaId
   arte: Arte | null
@@ -20,7 +20,7 @@ interface Props {
  * 10 cm do peito aparecem do tamanho que vão sair impressos — e não "mais ou
  * menos ali".
  */
-export function Camiseta({ catalogo, cor, area, arte, mostrarGuia = false, className = '' }: Props) {
+export function Camiseta({ personagem, cor, area, arte, mostrarGuia = false, className = '' }: Props) {
   const tecido = CORES_CAMISETA[cor]
   const alvo = AREAS[area]
   const { largura: L, altura: A } = CAMISETA_MM
@@ -67,8 +67,8 @@ export function Camiseta({ catalogo, cor, area, arte, mostrarGuia = false, class
                left: `${(alvo.x / L) * 100}%`, top: `${(alvo.y / A) * 100}%`,
                width: `${(alvo.largura / L) * 100}%`, height: `${(alvo.altura / A) * 100}%`,
              }}>
-          {arte.tipo === 'galinha' && catalogo ? (
-            <Galinha catalogo={catalogo} escolhas={arte.escolhas}
+          {arte.tipo === 'galinha' && personagem ? (
+            <Desenho personagem={personagem} escolhas={arte.escolhas}
                      cor={corSobreTecido(arte.cor, cor === 'preta')}
                      ajustado className="h-full" />
           ) : arte.tipo === 'pronta' ? (

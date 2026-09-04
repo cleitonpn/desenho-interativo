@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Check, Dices, Eraser, Images, Loader2, Save, Scan, Send, UserRound, X } from 'lucide-react'
-import { CORES, CORES_DO_EDITOR, MARCA, type CorId } from '../config/marca'
-import { Galinha } from '../components/Galinha'
+import {
+  ArrowLeft, Check, Dices, Eraser, Images, Loader2, Save, Scan, Send, UserRound, X,
+} from 'lucide-react'
+import { CORES, CORES_DO_EDITOR, type CorId } from '../config/marca'
+import { Desenho } from '../components/Desenho'
 import { ProvaNaPele } from '../components/ProvaNaPele'
 import { EnviarWhatsApp } from '../components/EnviarWhatsApp'
-import { SLOTS, caminhoDaPeca, carregarCatalogo, pecasDoSlot } from '../lib/catalogo'
+import {
+  caminhoDaPeca, carregarCatalogo, pecasDoSlot, personagemPadrao,
+  personagensVisiveis, slotsDisponiveis,
+} from '../lib/catalogo'
 import { contarPecas, sortear } from '../lib/composicao'
 import { preAquecer } from '../lib/exportar'
 import { salvarCriacao } from '../lib/criacoes'
@@ -14,15 +19,16 @@ import {
   iniciarSessao, registrarAcao, registrarConjunto, registrarPeca,
 } from '../lib/telemetria'
 import { registrarDescoberta, registrarMarco } from '../lib/progresso'
-import type { Catalogo, Escolhas, SlotId } from '../lib/tipos'
+import type { Catalogo, Escolhas, Personagem, SlotId } from '../lib/tipos'
 
 export function Editor() {
   const { usuario, perfil } = useAuth()
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
   // A galinha do dia chega pela navegação: abrir o editor já com ela montada
   // evita pedir para a pessoa refazer o que acabou de ver.
-  const inicial = (useLocation().state as { escolhas?: Escolhas } | null)?.escolhas
-  const [escolhas, setEscolhas] = useState<Escolhas>(inicial ?? {})
+  const vindo = useLocation().state as { escolhas?: Escolhas; personagem?: string } | null
+  const [escolhas, setEscolhas] = useState<Escolhas>(vindo?.escolhas ?? {})
+  const [personagemId, setPersonagemId] = useState<string | null>(vindo?.personagem ?? null)
   const [cor, setCor] = useState<CorId>('vermelho')
   const [slotAberto, setSlotAberto] = useState<SlotId | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -31,7 +37,14 @@ export function Editor() {
   const [enviar, setEnviar] = useState(false)
 
   useEffect(() => {
-    carregarCatalogo().then((c) => { setCatalogo(c); preAquecer(c) }).catch(() => {})
+    carregarCatalogo().then((c) => {
+      setCatalogo(c)
+      const inicial = c.personagens.find((p) => p.id === personagemId) ?? personagemPadrao(c)
+      setPersonagemId(inicial.id)
+      preAquecer(inicial, vindo?.escolhas)
+    }).catch(() => {})
+    // Só na montagem: trocar de personagem depois não deve recarregar o catálogo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => { if (usuario) iniciarSessao(usuario.uid) }, [usuario])
@@ -56,10 +69,10 @@ export function Editor() {
   }
 
   async function salvar() {
-    if (!catalogo || !usuario || total === 0) return
+    if (!personagem || !usuario || total === 0) return
     setSalvando(true)
     try {
-      await salvarCriacao(usuario.uid, perfil?.nome ?? 'Alguém', escolhas, cor)
+      await salvarCriacao(usuario.uid, perfil?.nome ?? 'Alguém', escolhas, cor, personagem.id)
       registrarAcao('salvamento')
       registrarConjunto(escolhas, 'salvamentos')
       void registrarMarco(usuario.uid, 'salvas')
@@ -70,7 +83,20 @@ export function Editor() {
     }
   }
 
-  if (!catalogo) {
+  const personagem = catalogo && personagemId
+    ? (catalogo.personagens.find((p) => p.id === personagemId) ?? personagemPadrao(catalogo))
+    : null
+
+  /** Trocar de bicho zera a montagem: um chapéu de galinha não serve num gato. */
+  function trocarPersonagem(novo: Personagem) {
+    setPersonagemId(novo.id)
+    setEscolhas({})
+    setSlotAberto(null)
+    setSalvo(false)
+    preAquecer(novo)
+  }
+
+  if (!catalogo || !personagem) {
     return (
       <div className="min-h-dvh grid place-items-center text-muted">
         <Loader2 className="animate-spin" />
@@ -83,7 +109,9 @@ export function Editor() {
     // no espaco e a galinha, que encolhe quando a bandeja de pecas abre.
     <div className="h-dvh overflow-hidden flex flex-col">
       <header className="safe-top px-4 pt-3 pb-2 flex items-center justify-between shrink-0">
-        <Link to="/inicio" className="font-display text-lg">{MARCA.nome}</Link>
+        <Link to="/inicio" className="botao-neutro !px-3 !py-2" aria-label="Voltar ao início">
+          <ArrowLeft size={18} />
+        </Link>
         <div className="flex items-center gap-2">
           <SeletorDeCor cor={cor} aoTrocar={setCor} />
           <button onClick={() => { registrarAcao('limpeza'); setEscolhas({}); setSalvo(false) }}
@@ -100,16 +128,28 @@ export function Editor() {
         </div>
       </header>
 
+      {personagensVisiveis(catalogo).length > 1 && (
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto shrink-0">
+          {personagensVisiveis(catalogo).map((p) => (
+            <button key={p.id} onClick={() => trocarPersonagem(p)}
+              className={`shrink-0 px-4 py-2 rounded-full border-2 font-semibold text-sm transition-colors ${
+                p.id === personagem.id ? 'border-ink bg-ink text-canvas' : 'border-ink/15 text-muted'}`}>
+              {p.nome}
+            </button>
+          ))}
+        </div>
+      )}
+
       <main className="flex-1 min-h-0 px-4 pb-2 flex items-center justify-center">
         <div className="papel moldura h-full max-w-sm p-3 flex items-center justify-center">
-          <Galinha catalogo={catalogo} escolhas={escolhas} cor={cor}
+          <Desenho personagem={personagem} escolhas={escolhas} cor={cor}
                    className="h-full max-h-full w-auto" />
         </div>
       </main>
 
       <div className="px-4 pb-2 flex items-center gap-2 shrink-0">
         <button onClick={() => {
-                  const sorteada = sortear(catalogo)
+                  const sorteada = sortear(personagem)
                   registrarAcao('sorteio')
                   registrarConjunto(sorteada, 'escolhas')
                   if (usuario) void registrarDescoberta(usuario.uid, Object.values(sorteada).filter(Boolean) as string[])
@@ -133,11 +173,14 @@ export function Editor() {
         </button>
       </div>
 
-      <MenuDeSlots catalogo={catalogo} escolhas={escolhas} aberto={slotAberto}
+      <MenuDeSlots personagem={personagem} escolhas={escolhas} aberto={slotAberto}
                    aoAbrir={setSlotAberto} aoEscolher={escolher} cor={cor} />
 
-      {pele && <ProvaNaPele catalogo={catalogo} escolhas={escolhas} cor={cor} aoFechar={() => setPele(false)} />}
-      {enviar && <EnviarWhatsApp catalogo={catalogo} escolhas={escolhas} cor={cor} aoFechar={() => setEnviar(false)} />}
+      {pele && <ProvaNaPele personagem={personagem} escolhas={escolhas} cor={cor} aoFechar={() => setPele(false)} />}
+      {enviar && (
+        <EnviarWhatsApp personagem={personagem} escolhas={escolhas} cor={cor}
+                        aoFechar={() => setEnviar(false)} />
+      )}
     </div>
   )
 }
@@ -169,7 +212,7 @@ function SeletorDeCor({ cor, aoTrocar }: { cor: CorId; aoTrocar: (c: CorId) => v
 }
 
 interface MenuProps {
-  catalogo: Catalogo
+  personagem: Personagem
   escolhas: Escolhas
   cor: CorId
   aberto: SlotId | null
@@ -177,9 +220,10 @@ interface MenuProps {
   aoEscolher: (s: SlotId, id: string) => void
 }
 
-function MenuDeSlots({ catalogo, escolhas, cor, aberto, aoAbrir, aoEscolher }: MenuProps) {
-  const pecas = useMemo(() => (aberto ? pecasDoSlot(catalogo, aberto) : []), [catalogo, aberto])
-  const slotAtual = SLOTS.find((s) => s.id === aberto)
+function MenuDeSlots({ personagem, escolhas, cor, aberto, aoAbrir, aoEscolher }: MenuProps) {
+  const pecas = useMemo(() => (aberto ? pecasDoSlot(personagem, aberto) : []), [personagem, aberto])
+  const slots = useMemo(() => slotsDisponiveis(personagem), [personagem])
+  const slotAtual = slots.find((s) => s.id === aberto)
 
   return (
     <nav className="border-t-2 border-ink/10 bg-surface safe-bottom shrink-0">
@@ -214,7 +258,7 @@ function MenuDeSlots({ catalogo, escolhas, cor, aberto, aoAbrir, aoEscolher }: M
       )}
 
       <div className="flex gap-2 overflow-x-auto px-4 py-3">
-        {SLOTS.map((s) => {
+        {slots.map((s) => {
           const usado = Boolean(escolhas[s.id])
           const ativo = aberto === s.id
           return (

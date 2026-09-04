@@ -45,6 +45,8 @@ export function Conta() {
 
   async function sairEVoltar() {
     await sair()
+    // A abertura, com a vitrine, e nao o formulario de login: quem saiu ainda
+    // pode querer olhar o que a galera anda criando.
     navegar('/', { replace: true })
   }
 

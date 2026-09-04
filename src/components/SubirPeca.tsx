@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AlertTriangle, Loader2, Upload, X } from 'lucide-react'
-import { SLOTS, caminhoDaPeca, pecaBase } from '../lib/catalogo'
+import { SLOTS, caminhoDaPeca, pecaBase, personagensVisiveis } from '../lib/catalogo'
 import { prepararPeca, publicarPeca, type PecaRemota } from '../lib/pecasRemotas'
 import type { Catalogo, SlotId } from '../lib/tipos'
 
@@ -22,16 +22,21 @@ export function SubirPeca({ catalogo, aoFechar, aoPublicar }: Props) {
   const [medidas, setMedidas] = useState<Medidas | null>(null)
   const [previa, setPrevia] = useState<string | null>(null)
   const [slot, setSlot] = useState<SlotId>('cabeca')
+  // Cada personagem tem canvas próprio, então ele precisa ser escolhido antes:
+  // é o que define contra qual medida o arquivo é conferido.
+  const personagens = personagensVisiveis(catalogo)
+  const [personagemId, setPersonagemId] = useState(personagens[0]?.id ?? 'galinha')
+  const personagem = personagens.find((p) => p.id === personagemId) ?? personagens[0]
   const [rotulo, setRotulo] = useState('')
   const [erro, setErro] = useState('')
   const [ocupado, setOcupado] = useState(false)
 
-  const base = pecaBase(catalogo)
-  const quadro = catalogo.enquadramento
+  const base = pecaBase(personagem)
+  const quadro = personagem.enquadramento
 
   // O alinhamento só funciona se a camada vier do mesmo canvas das outras.
   const canvasDiferente = medidas
-    && (medidas.canvasW !== catalogo.canvas.w || medidas.canvasH !== catalogo.canvas.h)
+    && (medidas.canvasW !== personagem.canvas.w || medidas.canvasH !== personagem.canvas.h)
 
   async function escolher(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -51,7 +56,7 @@ export function SubirPeca({ catalogo, aoFechar, aoPublicar }: Props) {
     if (!arquivo || !medidas || !rotulo.trim()) return
     setOcupado(true); setErro('')
     try {
-      aoPublicar(await publicarPeca(slot, rotulo.trim(), arquivo, medidas))
+      aoPublicar(await publicarPeca(personagemId, slot, rotulo.trim(), arquivo, medidas))
     } catch {
       setErro('Não consegui publicar. Confira se sua conta está marcada como admin.')
     } finally {
@@ -68,6 +73,21 @@ export function SubirPeca({ catalogo, aoFechar, aoPublicar }: Props) {
         </div>
 
         <div className="p-5 space-y-4">
+          {personagens.length > 1 && (
+            <div>
+              <span className="etiqueta">De quem é essa peça</span>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {personagens.map((p) => (
+                  <button key={p.id} onClick={() => setPersonagemId(p.id)}
+                    className={`px-3 py-1.5 rounded-full border-2 text-sm font-semibold transition-colors ${
+                      personagemId === p.id ? 'border-ink bg-ink text-canvas' : 'border-ink/15 text-muted'}`}>
+                    {p.nome}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <label className="botao-neutro w-full cursor-pointer">
             <Upload size={18} /> {arquivo ? 'Trocar arquivo' : 'Escolher PNG'}
             <input type="file" accept="image/png" className="hidden" onChange={escolher} />
@@ -76,7 +96,7 @@ export function SubirPeca({ catalogo, aoFechar, aoPublicar }: Props) {
           <p className="text-xs text-muted leading-relaxed">
             Exporte do Procreate em <strong>Compartilhar camadas → Arquivos PNG</strong>,
             sem mover a camada. O canvas precisa ser o mesmo dos outros acessórios
-            ({catalogo.canvas.w}×{catalogo.canvas.h}) — é ele que garante o encaixe.
+            ({personagem.canvas.w}×{personagem.canvas.h}) — é ele que garante o encaixe.
           </p>
 
           {canvasDiferente && (

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Instagram } from 'lucide-react'
 import { MARCA } from '../config/marca'
-import { Galinha } from '../components/Galinha'
-import { carregarCatalogo } from '../lib/catalogo'
+import { Desenho } from '../components/Desenho'
+import { acharPersonagem, carregarCatalogo } from '../lib/catalogo'
 import { ouvirVitrine } from '../lib/criacoes'
 import { EXEMPLOS } from '../lib/exemplos'
 import type { Catalogo, Criacao } from '../lib/tipos'
@@ -66,7 +66,8 @@ function FaixaVitrine({ catalogo, criacoes }: { catalogo: Catalogo; criacoes: Cr
         {fila.map((c, i) => (
           <figure key={`${c.id}-${i}`} className="quadro w-40 shrink-0">
             <div className="papel rounded flex items-center justify-center p-2">
-              <Galinha catalogo={catalogo} escolhas={c.escolhas} cor={c.cor} ajustado className="w-full" />
+              <Desenho personagem={acharPersonagem(catalogo, c.personagem)}
+                       escolhas={c.escolhas} cor={c.cor} ajustado className="w-full" />
             </div>
             <figcaption className="etiqueta mt-2.5 text-center truncate">{c.autorNome}</figcaption>
           </figure>

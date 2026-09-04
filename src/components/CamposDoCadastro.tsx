@@ -1,8 +1,11 @@
+import { Link } from 'react-router-dom'
 import type { DadosCadastro } from '../contexts/AuthContext'
 
 interface Props {
   dados: DadosCadastro
   aoMudar: (dados: DadosCadastro) => void
+  /** Na edição da conta a pessoa já consentiu; o aviso só aparece no cadastro. */
+  pedirConsentimento?: boolean
 }
 
 /**
@@ -10,7 +13,7 @@ interface Props {
  * lugares — cadastro por e-mail, complemento depois do Google e edição na
  * conta — e precisam pedir exatamente as mesmas coisas nos três.
  */
-export function CamposDoCadastro({ dados, aoMudar }: Props) {
+export function CamposDoCadastro({ dados, aoMudar, pedirConsentimento = false }: Props) {
   function campo<K extends keyof DadosCadastro>(k: K, v: DadosCadastro[K]) {
     aoMudar({ ...dados, [k]: v })
   }
@@ -51,6 +54,19 @@ export function CamposDoCadastro({ dados, aoMudar }: Props) {
           ))}
         </div>
       </fieldset>
+
+      {pedirConsentimento && (
+        /* Aviso curto no lugar onde a decisão é tomada. Enterrar isso num
+           checkbox de "li e concordo" não informa ninguém. */
+        <p className="text-xs text-muted leading-relaxed px-1">
+          Ao criar a conta, você concorda que o Vital guarde esses dados para falar
+          com você sobre o seu desenho. Nada é vendido nem repassado, e dá para
+          apagar tudo quando quiser.{' '}
+          <Link to="/privacidade" className="text-brand font-semibold underline underline-offset-2">
+            Como usamos seus dados
+          </Link>.
+        </p>
+      )}
     </>
   )
 }

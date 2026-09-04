@@ -47,7 +47,7 @@ export function CompletarCadastro() {
         </p>
 
         <form onSubmit={enviar} className="space-y-3">
-          <CamposDoCadastro dados={dados} aoMudar={setDados} />
+          <CamposDoCadastro dados={dados} aoMudar={setDados} pedirConsentimento />
           {erro && <p className="text-brand text-sm font-medium">{erro}</p>}
           <button className="botao-principal w-full mt-2"
                   disabled={ocupado || dados.jaFezArte === null}>

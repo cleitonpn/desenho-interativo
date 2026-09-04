@@ -69,7 +69,7 @@ export function Entrar() {
                  autoComplete={criando ? 'new-password' : 'current-password'}
                  value={senha} onChange={(e) => setSenha(e.target.value)} />
 
-          {criando && <CamposDoCadastro dados={dados} aoMudar={setDados} />}
+          {criando && <CamposDoCadastro dados={dados} aoMudar={setDados} pedirConsentimento />}
 
           {erro && <p className="text-brand text-sm font-medium">{erro}</p>}
 

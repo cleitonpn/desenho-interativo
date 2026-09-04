@@ -46,6 +46,12 @@ export function Abertura() {
       </main>
 
       {catalogo && <FaixaVitrine catalogo={catalogo} criacoes={vitrine} />}
+
+      <footer className="pb-6 text-center">
+        <Link to="/privacidade" className="etiqueta hover:text-ink transition-colors">
+          Como usamos seus dados
+        </Link>
+      </footer>
     </div>
   )
 }

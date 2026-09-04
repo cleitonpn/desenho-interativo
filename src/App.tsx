@@ -11,6 +11,7 @@ import { MinhasGalinhas } from './pages/MinhasGalinhas'
 import { Conta } from './pages/Conta'
 import { CompletarCadastro } from './pages/CompletarCadastro'
 import { VerificarEmail } from './pages/VerificarEmail'
+import { Privacidade } from './pages/Privacidade'
 // O painel só interessa ao Vital: carregado à parte para não pesar no
 // carregamento de quem entrou para montar uma galinha.
 const Admin = lazy(() =>
@@ -24,6 +25,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<SoVisitante><Abertura /></SoVisitante>} />
         <Route path="/entrar" element={<SoVisitante><Entrar /></SoVisitante>} />
+        {/* Pública de propósito: quem ainda não entrou precisa poder ler antes. */}
+        <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/completar" element={<PrecisaPerfil />} />
         <Route path="/verificar" element={<PrecisaVerificar />} />
         <Route path="/tutorial" element={<Protegida><Tutorial /></Protegida>} />

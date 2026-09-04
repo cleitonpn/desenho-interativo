@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, KeyRound, Loader2, LogOut, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Check, KeyRound, Loader2, LogOut, ShieldCheck, Trash2 } from 'lucide-react'
 import { MARCA } from '../config/marca'
 import { CamposDoCadastro } from '../components/CamposDoCadastro'
 import { useAuth, type DadosCadastro } from '../contexts/AuthContext'
-import { renomearAutor } from '../lib/criacoes'
+import { apagarTudoDoUsuario, renomearAutor } from '../lib/criacoes'
 
 const VAZIO: DadosCadastro = { nome: '', whatsapp: '', cidade: '', nascimento: '', jaFezArte: null }
 
@@ -87,10 +87,72 @@ export function Conta() {
           </Link>
         )}
 
-        <button onClick={sairEVoltar} className="w-full mt-8 py-3 font-semibold text-brand
+        <ApagarConta uid={usuario?.uid ?? ''} />
+
+        <button onClick={sairEVoltar} className="w-full mt-4 py-3 font-semibold text-brand
                                                  hover:bg-brand-soft rounded-xl transition-colors
                                                  inline-flex items-center justify-center gap-2">
           <LogOut size={18} /> Sair da conta
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Apagar a conta é um direito, então precisa estar aqui e funcionar de
+ * verdade — mas não pode ser um toque acidental. Pedir a palavra por extenso
+ * separa quem quer disso de quem esbarrou.
+ */
+function ApagarConta({ uid }: { uid: string }) {
+  const navegar = useNavigate()
+  const [aberto, setAberto] = useState(false)
+  const [confirmacao, setConfirmacao] = useState('')
+  const [apagando, setApagando] = useState(false)
+  const [erro, setErro] = useState('')
+
+  async function apagar() {
+    setApagando(true); setErro('')
+    try {
+      await apagarTudoDoUsuario(uid)
+      navegar('/', { replace: true })
+    } catch (e) {
+      const codigo = (e as { code?: string })?.code ?? ''
+      setErro(codigo === 'auth/requires-recent-login'
+        ? 'Por segurança, saia e entre de novo antes de apagar a conta.'
+        : 'Não consegui apagar agora. Tente de novo em instantes.')
+      setApagando(false)
+    }
+  }
+
+  if (!aberto) {
+    return (
+      <button onClick={() => setAberto(true)}
+              className="w-full mt-10 py-3 text-sm font-semibold text-faint hover:text-brand
+                         transition-colors inline-flex items-center justify-center gap-2">
+        <Trash2 size={15} /> Apagar minha conta
+      </button>
+    )
+  }
+
+  return (
+    <div className="mt-10 rounded-2xl border-2 border-brand p-4 space-y-3">
+      <p className="font-semibold">Apagar a conta e tudo que você salvou?</p>
+      <p className="text-sm text-muted leading-relaxed">
+        Some o seu cadastro e todas as suas galinhas, de vez. Não dá para desfazer.
+      </p>
+      <label className="block">
+        <span className="etiqueta">Digite APAGAR para confirmar</span>
+        <input className="campo mt-1" value={confirmacao} autoFocus
+               onChange={(e) => setConfirmacao(e.target.value.toUpperCase())} />
+      </label>
+      {erro && <p className="text-brand text-sm font-medium">{erro}</p>}
+      <div className="flex gap-2">
+        <button onClick={() => { setAberto(false); setConfirmacao(''); setErro('') }}
+                className="botao-neutro flex-1 !py-2.5">Cancelar</button>
+        <button onClick={apagar} disabled={confirmacao !== 'APAGAR' || apagando}
+                className="botao-principal flex-1 !py-2.5 disabled:opacity-40">
+          {apagando ? <Loader2 size={16} className="animate-spin" /> : null} Apagar
         </button>
       </div>
     </div>

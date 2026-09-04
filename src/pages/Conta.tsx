@@ -141,7 +141,7 @@ function ApagarConta({ uid }: { uid: string }) {
     <div className="mt-10 rounded-2xl border-2 border-brand p-4 space-y-3">
       <p className="font-semibold">Apagar a conta e tudo que você salvou?</p>
       <p className="text-sm text-muted leading-relaxed">
-        Some o seu cadastro e todas as suas galinhas, de vez. Não dá para desfazer.
+        Some o seu cadastro e todas as suas criações, de vez. Não dá para desfazer.
       </p>
       <label className="block">
         <span className="etiqueta">Digite APAGAR para confirmar</span>

@@ -10,7 +10,7 @@ import type { Catalogo, Criacao } from '../lib/tipos'
 
 /**
  * Porta de entrada, antes do login. O objetivo é mostrar o que o app faz sem
- * parecer anúncio: quem chega vê galinhas de gente de verdade passando na tela.
+ * parecer anúncio: quem chega vê criações de gente de verdade passando na tela.
  */
 export function Abertura() {
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
@@ -34,10 +34,10 @@ export function Abertura() {
       <main className="flex-1 px-6 flex flex-col items-center justify-center text-center py-10">
         <p className="etiqueta mb-4">{MARCA.chamada}</p>
         <h1 className="font-display text-[13vw] leading-[0.85] sm:text-7xl max-w-3xl">
-          Monte sua <span className="text-brand">galinha</span>
+          Monte o seu <span className="text-brand">bicho</span>
         </h1>
         <p className="mt-6 max-w-md text-muted leading-relaxed">
-          Mais de 90 acessórios desenhados à mão pelo Vital. Escolha o chapéu, o
+          Acessórios desenhados à mão pelo Vital, um por um. Escolha o chapéu, o
           óculos, a bota — e leve o desenho pronto para tatuar.
         </p>
         <Link to="/entrar" className="botao-principal mt-8 text-lg px-8">

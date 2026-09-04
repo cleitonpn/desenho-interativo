@@ -7,7 +7,7 @@ import { Abertura } from './pages/Abertura'
 import { Entrar } from './pages/Entrar'
 import { Tutorial } from './pages/Tutorial'
 import { Editor } from './pages/Editor'
-import { MinhasGalinhas } from './pages/MinhasGalinhas'
+import { MinhasCriacoes } from './pages/MinhasCriacoes'
 import { Conta } from './pages/Conta'
 import { CompletarCadastro } from './pages/CompletarCadastro'
 import { VerificarEmail } from './pages/VerificarEmail'
@@ -39,7 +39,7 @@ export default function App() {
         <Route path="/loja" element={<Protegida><Loja /></Protegida>} />
         <Route path="/tattoos" element={<Protegida><Tattoos /></Protegida>} />
         <Route path="/sobre" element={<Protegida><Sobre /></Protegida>} />
-        <Route path="/minhas" element={<Protegida><MinhasGalinhas /></Protegida>} />
+        <Route path="/minhas" element={<Protegida><MinhasCriacoes /></Protegida>} />
         <Route path="/conta" element={<Protegida><Conta /></Protegida>} />
         <Route path="/vital" element={
           <Protegida><Suspense fallback={<Espera />}><Admin /></Suspense></Protegida>

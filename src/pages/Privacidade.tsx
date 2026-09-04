@@ -27,7 +27,7 @@ export function Privacidade() {
         <Secao titulo="O que guardamos">
           <p>Quando você cria a conta: <strong>nome, e-mail, WhatsApp, cidade,
             data de nascimento</strong> e se você já fez alguma arte com o Vital.</p>
-          <p>Enquanto usa o app: as <strong>galinhas que você monta e salva</strong> e
+          <p>Enquanto usa o app: os <strong>desenhos que você monta e salva</strong> e
             números de uso — quais acessórios são escolhidos, quanto tempo as pessoas
             ficam, se usam o sorteio. Esses números são olhados em conjunto, para o Vital
             decidir o que desenhar; ninguém abre a sua sessão para ver o que você fez.</p>
@@ -35,7 +35,7 @@ export function Privacidade() {
 
         <Secao titulo="Para que serve">
           <p>Seu <strong>nome e WhatsApp</strong> são como o Vital responde quando você
-            manda uma galinha para tatuar.</p>
+            manda um desenho para tatuar.</p>
           <p>Seu <strong>e-mail</strong> pode ser usado para avisar de novidades do
             estúdio. Dá para pedir para sair dessa lista quando quiser — é só falar com
             a gente pelo WhatsApp.</p>
@@ -44,7 +44,7 @@ export function Privacidade() {
         </Secao>
 
         <Secao titulo="O que aparece para outras pessoas">
-          <p>A tela inicial mostra galinhas montadas aqui dentro, com o
+          <p>A tela inicial mostra desenhos montados aqui dentro, com o
             <strong> primeiro nome</strong> de quem montou. É a vitrine do app, e ela é
             pública — qualquer pessoa vê, mesmo sem ter conta.</p>
           <p>Seu e-mail, WhatsApp, cidade e nascimento <strong>nunca</strong> aparecem
@@ -59,7 +59,7 @@ export function Privacidade() {
 
         <Secao titulo="Apagar tudo">
           <p>Você pode apagar sua conta a qualquer momento, na tela
-            <strong> Minha conta</strong>. Isso apaga seu cadastro e todas as galinhas
+            <strong> Minha conta</strong>. Isso apaga seu cadastro e todos os desenhos
             que você salvou, de vez — não fica cópia.</p>
         </Secao>
 

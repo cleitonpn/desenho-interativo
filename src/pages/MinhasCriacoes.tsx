@@ -7,7 +7,7 @@ import { apagarCriacao, minhasCriacoes } from '../lib/criacoes'
 import { useAuth } from '../contexts/AuthContext'
 import type { Catalogo, Criacao } from '../lib/tipos'
 
-export function MinhasGalinhas() {
+export function MinhasCriacoes() {
   const { usuario } = useAuth()
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
   const [lista, setLista] = useState<Criacao[] | null>(null)
@@ -17,11 +17,11 @@ export function MinhasGalinhas() {
     carregarCatalogo().then(setCatalogo).catch(() => {})
     if (usuario) {
       minhasCriacoes(usuario.uid).then(setLista).catch((e: { code?: string }) => {
-        // Fingir "nenhuma galinha" quando a consulta falha esconde o problema
+        // Fingir "nenhuma criação" quando a consulta falha esconde o problema
         // e faz parecer que o salvamento nao funcionou.
         setErro(e?.code === 'permission-denied'
           ? 'As regras do Firestore estão bloqueando a leitura das suas criações.'
-          : `Não consegui carregar suas galinhas${e?.code ? ` (${e.code})` : ''}.`)
+          : `Não consegui carregar suas criações${e?.code ? ` (${e.code})` : ''}.`)
         setLista([])
       })
     } else {
@@ -45,7 +45,7 @@ export function MinhasGalinhas() {
           <UserRound size={20} />
         </Link>
       </div>
-      <h1 className="font-display text-3xl mt-5 mb-6">Minhas galinhas</h1>
+      <h1 className="font-display text-3xl mt-5 mb-6">Minhas criações</h1>
 
       {!catalogo || lista === null ? (
         <div className="grid place-items-center py-20 text-muted"><Loader2 className="animate-spin" /></div>
@@ -53,7 +53,7 @@ export function MinhasGalinhas() {
         <div className="moldura-sutil p-6 text-center">
           <p className="text-brand font-medium">{erro}</p>
           <p className="text-muted text-sm mt-2">
-            Suas galinhas continuam salvas — o problema é só para exibi-las aqui.
+            Suas criações continuam salvas — o problema é só para exibi-las aqui.
           </p>
         </div>
       ) : lista.length === 0 ? (

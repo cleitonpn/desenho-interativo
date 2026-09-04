@@ -60,7 +60,7 @@ export function Entrar() {
       <div className="max-w-sm mx-auto mt-8">
         <p className="etiqueta">{MARCA.nomeCompleto}</p>
         <h1 className="font-display text-4xl mt-2 mb-1">{criando ? 'Criar conta' : 'Entrar'}</h1>
-        <p className="text-muted text-sm mb-7">Sua conta guarda as galinhas que você montar.</p>
+        <p className="text-muted text-sm mb-7">Sua conta guarda os desenhos que você montar.</p>
 
         <form onSubmit={enviar} className="space-y-3">
           <input className="campo" type="email" required placeholder="E-mail" autoComplete="email"

@@ -25,7 +25,7 @@ export function Editor() {
   const navegar = useNavigate()
   const { usuario, perfil } = useAuth()
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
-  // A galinha do dia chega pela navegação: abrir o editor já com ela montada
+  // O desenho do dia chega pela navegação: abrir o editor já com ele montado
   // evita pedir para a pessoa refazer o que acabou de ver.
   const vindo = useLocation().state as { escolhas?: Escolhas; personagem?: string } | null
   const [escolhas, setEscolhas] = useState<Escolhas>(vindo?.escolhas ?? {})
@@ -62,7 +62,7 @@ export function Editor() {
       else {
         registrarPeca(id, slot, 'escolhas')
         registrarAcao('escolha_manual')
-        if (usuario) void registrarDescoberta(usuario.uid, [id])
+        if (usuario) void registrarDescoberta(usuario.uid, [id], personagemId ?? undefined)
       }
       return { ...e, [slot]: tirando ? undefined : id }
     })
@@ -107,7 +107,7 @@ export function Editor() {
 
   return (
     // h-dvh + overflow-hidden: o editor cabe numa tela e nao rola. Quem manda
-    // no espaco e a galinha, que encolhe quando a bandeja de pecas abre.
+    // no espaco e o desenho, que encolhe quando a bandeja de pecas abre.
     <div className="h-dvh overflow-hidden flex flex-col">
       <header className="safe-top px-4 pt-3 pb-2 flex items-center justify-between shrink-0">
         <Link to="/inicio" className="botao-neutro !px-3 !py-2" aria-label="Voltar ao início">
@@ -120,7 +120,7 @@ export function Editor() {
                   className="botao-neutro !px-3 !py-2 disabled:opacity-40">
             <Eraser size={18} />
           </button>
-          <Link to="/minhas" className="botao-neutro !px-3 !py-2" aria-label="Minhas galinhas">
+          <Link to="/minhas" className="botao-neutro !px-3 !py-2" aria-label="Minhas criações">
             <Images size={18} />
           </Link>
           <Link to="/conta" className="botao-neutro !px-3 !py-2" aria-label="Minha conta">
@@ -153,7 +153,10 @@ export function Editor() {
                   const sorteada = sortear(personagem)
                   registrarAcao('sorteio')
                   registrarConjunto(sorteada, 'escolhas')
-                  if (usuario) void registrarDescoberta(usuario.uid, Object.values(sorteada).filter(Boolean) as string[])
+                  if (usuario) {
+                    void registrarDescoberta(
+                      usuario.uid, Object.values(sorteada).filter(Boolean) as string[], personagem.id)
+                  }
                   setEscolhas(sorteada); setSalvo(false)
                 }} className="botao-neutro !px-4 !py-2.5 shrink-0">
           <Dices size={18} /> Sortear

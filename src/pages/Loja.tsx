@@ -43,7 +43,7 @@ export function Loja() {
         ) : produtos.length === 0 ? (
           <div className="moldura-sutil p-8 text-center">
             <p className="text-muted">A loja ainda está sendo montada.</p>
-            <Link to="/montar" className="botao-principal mt-5">Enquanto isso, monte uma galinha</Link>
+            <Link to="/montar" className="botao-principal mt-5">Enquanto isso, monte um bicho</Link>
           </div>
         ) : (
           categorias.map((cat) => (

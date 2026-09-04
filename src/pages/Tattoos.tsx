@@ -46,10 +46,10 @@ export function Tattoos() {
         <div className="mt-10 moldura p-5 text-center">
           <p className="font-display text-xl">Quer uma dessas?</p>
           <p className="text-muted text-sm mt-1.5 mb-4">
-            Monte sua galinha e mande pro Vital, ou fale direto com ele.
+            Monte o seu bicho e mande pro Vital, ou fale direto com ele.
           </p>
           <div className="flex gap-2">
-            <Link to="/montar" className="botao-neutro flex-1 !py-2.5">Montar galinha</Link>
+            <Link to="/montar" className="botao-neutro flex-1 !py-2.5">Montar bicho</Link>
             <a href={`https://wa.me/${MARCA.whatsapp}`} target="_blank" rel="noreferrer"
                className="botao-principal flex-1 !py-2.5">
               <MessageCircle size={18} /> Falar

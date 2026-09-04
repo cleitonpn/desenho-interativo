@@ -16,6 +16,9 @@ export interface Progresso {
   uid: string
   /** Ids de peça que a pessoa já vestiu ao menos uma vez. */
   descobertas: string[]
+  /** Bichos que a pessoa já montou. Com vários no catálogo, conhecer a turma
+   *  toda passa a ser uma jornada em si. */
+  personagensUsados: string[]
   salvas: number
   enviadas: number
   provasPele: number
@@ -23,7 +26,8 @@ export interface Progresso {
 }
 
 export const VAZIO: Progresso = {
-  uid: '', descobertas: [], salvas: 0, enviadas: 0, provasPele: 0, conquistas: [],
+  uid: '', descobertas: [], personagensUsados: [],
+  salvas: 0, enviadas: 0, provasPele: 0, conquistas: [],
 }
 
 export interface Conquista {
@@ -32,23 +36,41 @@ export interface Conquista {
   descricao: string
   emoji: string
   /** Quanto falta, de 0 a 1, para o card mostrar progresso em vez de só travado. */
-  progresso: (p: Progresso, totalPecas: number) => number
+  progresso: (p: Progresso, total: Totais) => number
 }
 
+export interface Totais {
+  pecas: number
+  personagens: number
+}
+
+/**
+ * Nenhuma conquista fala em galinha: o Vital ja desenha outros bichos, e um
+ * titulo preso a um deles envelhece no dia em que o proximo entra. "Conheceu a
+ * turma" so existe por causa disso — ela premia justamente experimentar os
+ * bichos novos, que e o que o acervo crescendo pede.
+ */
 export const CONQUISTAS: Conquista[] = [
-  { id: 'primeira', titulo: 'Primeira galinha', descricao: 'Salvou a primeira criação', emoji: '🥚',
+  { id: 'primeira', titulo: 'Primeira criação', descricao: 'Salvou o primeiro desenho', emoji: '✏️',
     progresso: (p) => Math.min(p.salvas, 1) },
   { id: 'mandou', titulo: 'Mandou pro Vital', descricao: 'Enviou um desenho para o estúdio', emoji: '📨',
     progresso: (p) => Math.min(p.enviadas, 1) },
   { id: 'na-pele', titulo: 'Viu na pele', descricao: 'Provou o desenho numa foto sua', emoji: '💪',
     progresso: (p) => Math.min(p.provasPele, 1) },
-  { id: 'dez', titulo: 'Criador de galinhas', descricao: 'Salvou 10 criações', emoji: '🐔',
+  { id: 'dez', titulo: 'Pegou o jeito', descricao: 'Salvou 10 criações', emoji: '🎨',
     progresso: (p) => Math.min(p.salvas / 10, 1) },
+  { id: 'turma', titulo: 'Conheceu a turma', descricao: 'Montou todos os bichos do acervo', emoji: '🐾',
+    progresso: (p, t) => (t.personagens > 1 ? Math.min(p.personagensUsados.length / t.personagens, 1) : 0) },
   { id: 'metade', titulo: 'Meio caminho', descricao: 'Experimentou metade dos acessórios', emoji: '🧭',
-    progresso: (p, total) => Math.min(p.descobertas.length / (total / 2), 1) },
+    progresso: (p, t) => Math.min(p.descobertas.length / (t.pecas / 2), 1) },
   { id: 'tudo', titulo: 'Viu tudo', descricao: 'Experimentou todos os acessórios', emoji: '👑',
-    progresso: (p, total) => Math.min(p.descobertas.length / total, 1) },
+    progresso: (p, t) => Math.min(p.descobertas.length / t.pecas, 1) },
 ]
+
+/** Com um bicho só, "conheceu a turma" não teria graça: fica fora até haver dois. */
+export function conquistasVisiveis(totais: Totais): Conquista[] {
+  return CONQUISTAS.filter((c) => c.id !== 'turma' || totais.personagens > 1)
+}
 
 export async function carregarProgresso(uid: string): Promise<Progresso> {
   try {
@@ -63,10 +85,16 @@ export async function carregarProgresso(uid: string): Promise<Progresso> {
  * arrayUnion faz o Firestore ignorar o que ja esta la, entao vestir a mesma
  * peca dez vezes nao infla nada e duas abas abertas nao se atropelam.
  */
-export async function registrarDescoberta(uid: string, pecaIds: string[]): Promise<void> {
+export async function registrarDescoberta(
+  uid: string, pecaIds: string[], personagem?: string,
+): Promise<void> {
   if (!pecaIds.length) return
   try {
-    await setDoc(doc(db, 'progresso', uid), { uid, descobertas: arrayUnion(...pecaIds) }, { merge: true })
+    await setDoc(doc(db, 'progresso', uid), {
+      uid,
+      descobertas: arrayUnion(...pecaIds),
+      ...(personagem ? { personagensUsados: arrayUnion(personagem) } : {}),
+    }, { merge: true })
   } catch { /* progresso não pode atrapalhar quem está montando */ }
 }
 

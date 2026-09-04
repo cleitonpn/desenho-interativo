@@ -6,14 +6,14 @@ import { Desenho } from '../components/Desenho'
 import { useAuth } from '../contexts/AuthContext'
 import { carregarCatalogo, personagemPadrao, personagensVisiveis } from '../lib/catalogo'
 import {
-  CONQUISTAS, carregarProgresso, desenhoDoDia, totalDePecas,
+  carregarProgresso, conquistasVisiveis, desenhoDoDia, totalDePecas,
   VAZIO, type Progresso,
 } from '../lib/progresso'
 import type { Catalogo } from '../lib/tipos'
 
 /**
  * O hub do app. Antes, entrar caía direto no editor — o que servia para montar
- * uma galinha e mais nada. Aqui a pessoa vê onde pode ir, o quanto já explorou
+ * um desenho e mais nada. Aqui a pessoa vê onde pode ir, o quanto já explorou
  * do acervo do Vital e um desenho novo por dia.
  */
 export function Inicio() {
@@ -28,7 +28,9 @@ export function Inicio() {
     if (perfil?.uid) carregarProgresso(perfil.uid).then(setProgresso).catch(() => {})
   }, [perfil?.uid])
 
-  const total = catalogo ? totalDePecas(personagensVisiveis(catalogo)) : 0
+  const bichos = catalogo ? personagensVisiveis(catalogo) : []
+  const totais = { pecas: totalDePecas(bichos), personagens: bichos.length }
+  const total = totais.pecas
   const vistas = progresso.descobertas.length
   // O desenho do dia sorteia também o bicho, para a home não ser sempre galinha.
   const doDia = useMemo(() => {
@@ -98,8 +100,10 @@ export function Inicio() {
               <Desenho personagem={doDia.personagem} escolhas={doDia.escolhas} cor="vermelho"
                        ajustado className="w-40" />
             </div>
+            {/* Sem adjetivo concordando com o nome do bicho: "galinha sorteado"
+                e "gato sorteada" sairiam errados na mesma frase. */}
             <p className="text-sm text-muted mt-3 leading-relaxed">
-              Sorteada hoje para todo mundo. Amanhã é outra.
+              Sorteio de hoje, igual para todo mundo. Amanhã muda.
             </p>
             <Link to="/montar" state={{ escolhas: doDia.escolhas, personagem: doDia.personagem.id }}
                   className="botao-neutro w-full mt-3 !py-2.5">
@@ -111,8 +115,8 @@ export function Inicio() {
         <section className="mt-8">
           <h2 className="etiqueta mb-3">Conquistas</h2>
           <div className="grid grid-cols-3 gap-3">
-            {CONQUISTAS.map((c) => {
-              const pct = Math.min(c.progresso(progresso, total || 1), 1)
+            {conquistasVisiveis(totais).map((c) => {
+              const pct = Math.min(c.progresso(progresso, { ...totais, pecas: total || 1 }), 1)
               const feita = pct >= 1
               return (
                 <article key={c.id} title={c.descricao}

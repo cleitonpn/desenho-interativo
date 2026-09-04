@@ -46,11 +46,11 @@ export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
       registrarAcao('whatsapp')
       registrarConjunto(escolhas, 'levadas')
       void registrarMarco(usuario.uid, 'enviadas')
-      window.open(linkWhatsApp(itens, CORES[cor].rotulo, url), '_blank')
+      window.open(linkWhatsApp(itens, CORES[cor].rotulo, personagem.nome, url), '_blank')
     } catch {
       // Se o upload falhar, ainda vale abrir a conversa só com o texto.
       setErro('Não consegui subir a imagem. Vou abrir o WhatsApp só com o texto — anexe a imagem baixada.')
-      window.open(linkWhatsApp(itens, CORES[cor].rotulo), '_blank')
+      window.open(linkWhatsApp(itens, CORES[cor].rotulo, personagem.nome), '_blank')
     } finally {
       setOcupado(false)
     }
@@ -60,10 +60,10 @@ export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
   async function compartilhar() {
     if (!canvas) return
     const blob = await canvasParaBlob(canvas)
-    const arquivo = new File([blob], 'minha-galinha.png', { type: 'image/png' })
-    if (!podeCompartilharArquivo(arquivo)) { baixarCanvas(canvas, 'minha-galinha.png'); return }
+    const arquivo = new File([blob], 'meu-desenho.png', { type: 'image/png' })
+    if (!podeCompartilharArquivo(arquivo)) { baixarCanvas(canvas, 'meu-desenho.png'); return }
     try {
-      await navigator.share({ files: [arquivo], text: `Minha galinha 🐔 ${itens.join(', ')}` })
+      await navigator.share({ files: [arquivo], text: `${personagem.nome}: ${itens.join(', ')}` })
       registrarAcao('compartilhamento')
       registrarConjunto(escolhas, 'levadas')
     } catch { /* cancelado pela pessoa */ }
@@ -79,7 +79,7 @@ export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
 
         <div className="p-5 space-y-4">
           <div className="papel rounded-xl border-2 border-ink/10 p-3 grid place-items-center min-h-40">
-            {previa ? <img src={previa} alt="Prévia da sua galinha" className="max-h-56" />
+            {previa ? <img src={previa} alt="Prévia do seu desenho" className="max-h-56" />
                     : <Loader2 className="animate-spin text-muted" />}
           </div>
 
@@ -104,7 +104,7 @@ export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
                         if (!canvas) return
                         registrarAcao('download')
                         registrarConjunto(escolhas, 'levadas')
-                        baixarCanvas(canvas, 'minha-galinha.png')
+                        baixarCanvas(canvas, 'meu-desenho.png')
                       }}
                       disabled={!canvas} className="botao-neutro flex-1 !py-2.5">
                 <Download size={18} /> Baixar

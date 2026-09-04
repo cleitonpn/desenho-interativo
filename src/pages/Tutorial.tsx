@@ -19,12 +19,12 @@ const PASSOS: { titulo: string; texto: string; escolhas: Escolhas }[] = [
   },
   {
     titulo: 'Sem ideia? Sorteie',
-    texto: 'O botão de sorteio monta uma galinha na hora. Dá para sortear até aparecer algo que te agrade e ajustar dali.',
+    texto: 'O botão de sorteio monta um na hora. Dá para sortear até aparecer algo que te agrade e ajustar dali.',
     escolhas: { cabeca: 'cabeca/chapeu-cowboy', olhos: 'olhos/oculos-coracao', pescoco: 'pescoco/bandana-xadrez', roupa_cima: 'roupa_cima/casaco-franjas', sapatos: 'sapatos/bota-country-cheia' },
   },
   {
     titulo: 'Salve e mande pro Vital',
-    texto: 'Salve quantas quiser, troque entre vermelho e preto, veja como fica na sua pele e mande no WhatsApp dele.',
+    texto: 'Salve quantos quiser, troque entre vermelho e preto, veja como fica na sua pele e mande no WhatsApp dele.',
     escolhas: { cabeca: 'cabeca/chapeu-cowboy', olhos: 'olhos/oculos-coracao', pescoco: 'pescoco/bandana-xadrez', roupa_cima: 'roupa_cima/casaco-franjas', sapatos: 'sapatos/bota-country-cheia', bolsa: 'bolsa/bolsa-flor' },
   },
 ]
@@ -69,7 +69,7 @@ export function Tutorial() {
         <h2 className="font-display text-3xl">{atual.titulo}</h2>
         <p className="text-muted mt-3 leading-relaxed">{atual.texto}</p>
         <button onClick={avancar} className="botao-principal w-full mt-7">
-          {passo < PASSOS.length - 1 ? 'Próximo' : 'Montar a minha'}
+          {passo < PASSOS.length - 1 ? 'Próximo' : 'Quero montar'}
         </button>
       </div>
     </div>

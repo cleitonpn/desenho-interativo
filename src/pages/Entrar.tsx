@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { MARCA } from '../config/marca'
 import { CamposDoCadastro } from '../components/CamposDoCadastro'
@@ -11,6 +11,9 @@ const VAZIO: DadosCadastro = { nome: '', whatsapp: '', cidade: '', nascimento: '
 
 export function Entrar() {
   const navegar = useNavigate()
+  // Quem foi barrado numa tela protegida volta para ela depois de entrar, em
+  // vez de cair na home e ter de achar o caminho de novo.
+  const destino = (useLocation().state as { destino?: string } | null)?.destino ?? '/montar'
   const { entrarComEmail, criarConta, entrarComGoogle } = useAuth()
   const [modo, setModo] = useState<Modo>('entrar')
   const [email, setEmail] = useState('')
@@ -31,7 +34,7 @@ export function Entrar() {
         navegar('/verificar')
       } else {
         await entrarComEmail(email, senha)
-        navegar('/tutorial')
+        navegar(destino)
       }
     } catch (err) {
       setErro(traduzir(err))
@@ -44,7 +47,7 @@ export function Entrar() {
     try {
       // Sem perfil, o roteador leva para /completar — o Google devolve só nome
       // e e-mail, e o resto do cadastro ainda precisa ser preenchido.
-      navegar((await entrarComGoogle()) ? '/tutorial' : '/completar')
+      navegar((await entrarComGoogle()) ? destino : '/completar')
     } catch (err) {
       setErro(traduzir(err))
       setOcupado(false)

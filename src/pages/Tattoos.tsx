@@ -13,8 +13,8 @@ export function Tattoos() {
 
   return (
     <div className="min-h-dvh px-5 py-6 safe-top safe-bottom">
-      <Link to="/inicio" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
-        <ArrowLeft size={18} /> Início
+      <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
+        <ArrowLeft size={18} /> Voltar
       </Link>
 
       <div className="max-w-3xl mx-auto mt-6">

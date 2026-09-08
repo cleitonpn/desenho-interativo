@@ -44,10 +44,11 @@ export function Conta() {
   }
 
   async function sairEVoltar() {
-    await sair()
-    // A abertura, com a vitrine, e nao o formulario de login: quem saiu ainda
-    // pode querer olhar o que a galera anda criando.
+    // A ordem importa: sair primeiro faria o guard desta tela ver "sem usuário"
+    // e mandar para o login antes de a navegação acontecer. Saindo da tela
+    // protegida antes, o logout acontece já na home pública.
     navegar('/', { replace: true })
+    await sair()
   }
 
   return (

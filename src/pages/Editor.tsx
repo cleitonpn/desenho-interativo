@@ -110,7 +110,7 @@ export function Editor() {
     // no espaco e o desenho, que encolhe quando a bandeja de pecas abre.
     <div className="h-dvh overflow-hidden flex flex-col">
       <header className="safe-top px-4 pt-3 pb-2 flex items-center justify-between shrink-0">
-        <Link to="/inicio" className="botao-neutro !px-3 !py-2" aria-label="Voltar ao início">
+        <Link to="/" className="botao-neutro !px-3 !py-2" aria-label="Voltar ao início">
           <ArrowLeft size={18} />
         </Link>
         <div className="flex items-center gap-2">

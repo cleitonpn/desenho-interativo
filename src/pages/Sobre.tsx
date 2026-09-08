@@ -10,8 +10,8 @@ export function Sobre() {
 
   return (
     <div className="min-h-dvh px-5 py-6 safe-top safe-bottom">
-      <Link to="/inicio" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
-        <ArrowLeft size={18} /> Início
+      <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
+        <ArrowLeft size={18} /> Voltar
       </Link>
 
       <div className="max-w-lg mx-auto mt-6">

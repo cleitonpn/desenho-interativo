@@ -20,12 +20,12 @@ export function Loja() {
   const categorias = [...new Set((produtos ?? []).map((p) => p.categoria))].sort()
 
   return (
-    <div className="min-h-dvh px-5 py-6 safe-top safe-bottom">
+    <div className="min-h-dvh px-5 lg:px-10 py-6 safe-top safe-bottom">
       <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
         <ArrowLeft size={18} /> Voltar
       </Link>
 
-      <div className="max-w-3xl mx-auto mt-6">
+      <div className="max-w-6xl mx-auto mt-6">
         <p className="etiqueta">Do estúdio para você</p>
         <h1 className="font-display text-4xl mt-1.5 mb-4">Loja</h1>
 
@@ -49,7 +49,7 @@ export function Loja() {
           categorias.map((cat) => (
             <section key={cat} className="mb-9">
               <h2 className="etiqueta mb-3">{cat}</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 {produtos.filter((p) => p.categoria === cat).map((p) => (
                   <Link key={p.id} to={`/loja/${p.id}`}
                         state={vindo?.arte ? { arte: vindo.arte, personagem: vindo.personagem } : undefined}

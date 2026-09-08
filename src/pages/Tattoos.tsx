@@ -12,12 +12,12 @@ export function Tattoos() {
   useEffect(() => { listarTattoos().then(setLista).catch(() => setLista([])) }, [])
 
   return (
-    <div className="min-h-dvh px-5 py-6 safe-top safe-bottom">
+    <div className="min-h-dvh px-5 lg:px-10 py-6 safe-top safe-bottom">
       <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
         <ArrowLeft size={18} /> Voltar
       </Link>
 
-      <div className="max-w-3xl mx-auto mt-6">
+      <div className="max-w-6xl mx-auto mt-6">
         <p className="etiqueta">Feito na pele</p>
         <h1 className="font-display text-4xl mt-1.5 mb-6">Tattoos do Vital</h1>
 
@@ -31,7 +31,7 @@ export function Tattoos() {
             </a>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {lista.map((t) => (
               <button key={t.id} onClick={() => setAberta(t)}
                       className="quadro !p-2 text-left transition-transform active:translate-y-[2px]">

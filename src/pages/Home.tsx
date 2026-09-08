@@ -52,7 +52,7 @@ export function Home() {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="safe-top px-5 pt-5 flex items-center justify-between">
+      <header className="safe-top px-5 lg:px-10 pt-5 flex items-center justify-between">
         <span className="font-display text-xl tracking-tight">{MARCA.nome}</span>
         <div className="flex items-center gap-2">
           <a href={MARCA.instagram} target="_blank" rel="noreferrer"
@@ -69,7 +69,9 @@ export function Home() {
         </div>
       </header>
 
-      <main className="px-5 pb-10 max-w-lg mx-auto w-full">
+      {/* No celular tudo empilha; no desktop a coluna estreita deixaria dois
+          terços da tela vazios, então o conteúdo se espalha em três colunas. */}
+      <main className="px-5 lg:px-10 pb-10 w-full max-w-lg lg:max-w-6xl mx-auto">
         {usuario ? (
           <>
             <p className="etiqueta mt-6">Oi, {perfil?.nome?.split(' ')[0] ?? 'tudo bem'}</p>
@@ -80,16 +82,18 @@ export function Home() {
         ) : (
           <div className="text-center py-8">
             <p className="etiqueta">{MARCA.chamada}</p>
-            <h1 className="font-display text-[13vw] leading-[0.85] sm:text-6xl mt-3">
-              Monte o seu <span className="text-brand">bicho</span>
+            <h1 className="font-display text-[12vw] leading-[0.85] sm:text-6xl lg:text-7xl mt-3">
+              Tudo que o Vital <span className="text-brand">desenha</span>
             </h1>
-            <p className="mt-5 text-muted leading-relaxed max-w-sm mx-auto">
-              Acessórios desenhados à mão pelo Vital, um por um. Escolha o chapéu,
-              o óculos, a bota — e leve o desenho pronto para tatuar.
+            <p className="mt-5 text-muted leading-relaxed max-w-sm lg:max-w-lg mx-auto lg:text-lg">
+              {MARCA.oQueTem} E um bicho para você montar do seu jeito, peça por
+              peça, e levar pronto para tatuar.
             </p>
           </div>
         )}
 
+        <div className="lg:grid lg:grid-cols-3 lg:gap-5 lg:items-start">
+        <div className="lg:col-span-2">
         {/* Só quem entrou tem progresso: é pessoal por natureza. */}
         {usuario && totais.pecas > 0 && (
           <section className="moldura mt-6 p-5">
@@ -126,8 +130,10 @@ export function Home() {
                   titulo="Quem é o Vital" texto="A história do traço" />
         </nav>
 
+        </div>
+
         {catalogo && doDia && (
-          <section className="mt-4 moldura p-5">
+          <section className="mt-4 lg:mt-6 moldura p-5 lg:sticky lg:top-6">
             <p className="etiqueta flex items-center gap-1.5">
               <Sparkle size={13} className="text-brand" /> {doDia.personagem.nome} de hoje
             </p>
@@ -148,9 +154,9 @@ export function Home() {
         )}
 
         {usuario && (
-          <section className="mt-8">
+          <section className="mt-8 lg:col-span-3">
             <h2 className="etiqueta mb-3">Conquistas</h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
               {conquistasVisiveis(totais).map((c) => {
                 const pct = Math.min(c.progresso(progresso, { ...totais, pecas: totais.pecas || 1 }), 1)
                 const feita = pct >= 1
@@ -171,6 +177,7 @@ export function Home() {
             </div>
           </section>
         )}
+        </div>
       </main>
 
       {catalogo && <FaixaVitrine catalogo={catalogo} criacoes={vitrine} />}
@@ -210,7 +217,7 @@ function FaixaVitrine({ catalogo, criacoes }: { catalogo: Catalogo; criacoes: Cr
       <p className="etiqueta text-center mb-4">Feitas aqui dentro</p>
       <div className="flex gap-5 w-max animate-deslizar hover:[animation-play-state:paused]">
         {fila.map((c, i) => (
-          <figure key={`${c.id}-${i}`} className="quadro w-40 shrink-0">
+          <figure key={`${c.id}-${i}`} className="quadro w-40 lg:w-52 shrink-0">
             <div className="papel rounded flex items-center justify-center p-2">
               <Desenho personagem={acharPersonagem(catalogo, c.personagem)}
                        escolhas={c.escolhas} cor={c.cor} ajustado className="w-full" />

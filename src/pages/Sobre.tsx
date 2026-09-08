@@ -14,7 +14,7 @@ export function Sobre() {
         <ArrowLeft size={18} /> Voltar
       </Link>
 
-      <div className="max-w-lg mx-auto mt-6">
+      <div className="max-w-lg lg:max-w-4xl mx-auto mt-6">
         <p className="etiqueta">Quem desenha</p>
         <h1 className="font-display text-4xl mt-1.5 mb-6">Vital Monteiro</h1>
 
@@ -23,7 +23,8 @@ export function Sobre() {
         ) : (
           <>
             {dados.fotos.length > 0 && (
-              <div className={`grid gap-3 mb-7 ${dados.fotos.length === 1 ? '' : 'grid-cols-2'}`}>
+              <div className={`grid gap-3 mb-7 ${
+                dados.fotos.length === 1 ? '' : 'grid-cols-2 lg:grid-cols-3'}`}>
                 {dados.fotos.map((foto, i) => (
                   <img key={foto} src={foto} alt="" loading={i > 1 ? 'lazy' : undefined}
                        className="w-full rounded-2xl border-[2.5px] border-ink object-cover

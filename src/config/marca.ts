@@ -8,8 +8,14 @@ export const MARCA = {
   nome: 'Quintal',
   /** Nome por extenso, usado na abertura e no titulo da aba. */
   nomeCompleto: 'O Quintal do Vital',
-  /** Uma linha sobre o que e o lugar. */
-  chamada: 'Onde os bichos do Vital ganham roupa',
+  /**
+   * Uma linha sobre o que e o lugar. Ela mudou quando o app deixou de ser so o
+   * montador de bichos: hoje aqui tem tatuagem, ceramica e loja, e uma chamada
+   * que fala so de bicho esconde metade do que o Vital faz.
+   */
+  chamada: 'Estúdio e ateliê do Vital Monteiro',
+  /** O que existe aqui dentro, na ordem em que o visitante encontra. */
+  oQueTem: 'Tatuagem, flash, cerâmica e camiseta.',
   /** @ do artista, impresso no rodape das imagens exportadas. */
   arroba: '@vitalmonteirotattoo',
   /** Numero do Vital no formato aceito pelo wa.me (so digitos, com pais). */

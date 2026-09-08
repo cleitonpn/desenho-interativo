@@ -36,7 +36,7 @@ export function MinhasCriacoes() {
   }
 
   return (
-    <div className="min-h-dvh px-5 py-6 safe-top safe-bottom">
+    <div className="min-h-dvh px-5 lg:px-10 py-6 safe-top safe-bottom max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <Link to="/montar" className="inline-flex items-center gap-2 text-muted hover:text-ink transition-colors">
           <ArrowLeft size={18} /> Montar
@@ -62,7 +62,7 @@ export function MinhasCriacoes() {
           <Link to="/montar" className="botao-principal mt-5">Montar a primeira</Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {lista.map((c) => (
             <figure key={c.id} className="quadro">
               <div className="papel rounded p-2">

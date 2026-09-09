@@ -109,10 +109,16 @@ export function Editor() {
     // h-dvh + overflow-hidden: o editor cabe numa tela e nao rola. Quem manda
     // no espaco e o desenho, que encolhe quando a bandeja de pecas abre.
     //
-    // No celular tudo empilha. No desktop as pecas vao para uma coluna lateral:
-    // esticar a barra de baixo por 1400px deixaria "Mandar" com um metro de
-    // largura e os controles nas pontas opostas da tela.
-    <div className="h-dvh overflow-hidden flex flex-col lg:flex-row">
+    // Uma coluna so, em qualquer tela. O layout de duas colunas dependia de
+    // largura, mas largura grande nao quer dizer tela grande: celular em modo
+    // "site para computador", deitado ou com fonte aumentada cai no mesmo
+    // breakpoint e desmonta. Aqui o editor e o que mais precisa ser previsivel.
+    //
+    // Em tela alta o suficiente nada rola, que e o caso normal do celular em
+    // pe. Em tela curta — deitado, teclado aberto, janela baixa — o editor
+    // rola, porque espremer tudo ali daria um desenho ilegivel.
+    <div className="min-h-dvh flex flex-col [@media(min-height:620px)]:h-dvh
+                    [@media(min-height:620px)]:overflow-hidden">
       <div className="flex flex-col flex-1 min-h-0">
       <header className="safe-top px-4 pt-3 pb-2 flex items-center justify-between shrink-0">
         <Link to="/" className="botao-neutro !px-3 !py-2" aria-label="Voltar ao início">
@@ -147,18 +153,19 @@ export function Editor() {
       )}
 
       <main className="flex-1 min-h-0 px-4 pb-2 flex items-center justify-center">
-        <div className="papel moldura p-3 w-full max-w-sm max-h-full flex lg:w-auto lg:max-w-none
-                        lg:h-full">
+        <div className="papel moldura p-3 flex papel-editor"
+             style={{
+               '--proporcao': personagem.enquadramento.w / personagem.enquadramento.h,
+             } as React.CSSProperties}>
           <Desenho personagem={personagem} escolhas={escolhas} cor={cor}
-                   className="w-full h-auto lg:w-auto lg:h-full m-auto" />
+                   className="w-full h-auto m-auto" />
         </div>
       </main>
 
       </div>
 
-      <aside className="shrink-0 flex flex-col lg:w-[380px] lg:border-l-2 lg:border-ink/10
-                        lg:min-h-0 lg:pt-4">
-      <div className="px-4 pb-2 flex items-center gap-2 shrink-0 lg:flex-wrap">
+      <aside className="shrink-0 flex flex-col">
+      <div className="px-4 pb-2 flex items-center gap-2 shrink-0">
         <button onClick={() => {
                   const sorteada = sortear(personagem)
                   registrarAcao('sorteio')
@@ -189,8 +196,7 @@ export function Editor() {
         </AcaoIcone>
 
         <button onClick={() => setEnviar(true)} disabled={total === 0}
-                className="botao-principal !px-4 !py-2.5 flex-1 min-w-0 lg:w-full lg:flex-none
-                           disabled:opacity-40">
+                className="botao-principal !px-4 !py-2.5 flex-1 min-w-0 disabled:opacity-40">
           <Send size={18} /> Mandar
         </button>
       </div>
@@ -250,24 +256,21 @@ function MenuDeSlots({ personagem, escolhas, cor, aberto, aoAbrir, aoEscolher }:
   const slotAtual = slots.find((s) => s.id === aberto)
 
   return (
-    <nav className="border-t-2 border-ink/10 bg-surface safe-bottom shrink-0
-                    lg:border-t-0 lg:flex lg:flex-col-reverse lg:min-h-0 lg:flex-1">
+    <nav className="border-t-2 border-ink/10 bg-surface safe-bottom shrink-0">
       {aberto && slotAtual && (
-        <div className="animate-sheet-up border-b-2 border-ink/10 lg:border-b-0 lg:border-t-2
-                        lg:min-h-0 lg:flex lg:flex-col">
+        <div className="animate-sheet-up border-b-2 border-ink/10">
           <div className="flex items-center justify-between px-5 py-3">
             <span className="etiqueta">{slotAtual.rotulo} · {pecas.length} opções</span>
             <button onClick={() => aoAbrir(null)} className="text-muted hover:text-ink" aria-label="Fechar">
               <X size={18} />
             </button>
           </div>
-          <div className="flex gap-3 overflow-x-auto px-5 pb-4
-                          lg:grid lg:grid-cols-3 lg:overflow-y-auto lg:overflow-x-visible">
+          <div className="flex gap-3 overflow-x-auto px-5 pb-4">
             {pecas.map((p) => {
               const ativa = escolhas[aberto] === p.id
               return (
                 <button key={p.id} onClick={() => aoEscolher(aberto, p.id)}
-                  className={`shrink-0 w-24 lg:w-auto rounded-xl border-2 p-2 transition-all ${
+                  className={`shrink-0 w-24 rounded-xl border-2 p-2 transition-all ${
                     ativa ? 'border-brand bg-brand-soft' : 'border-ink/10 hover:border-ink/25'}`}>
                   <div className="h-16 grid place-items-center">
                     <img src={caminhoDaPeca(p)} alt="" loading="lazy" decoding="async"
@@ -284,7 +287,7 @@ function MenuDeSlots({ personagem, escolhas, cor, aberto, aoAbrir, aoEscolher }:
         </div>
       )}
 
-      <div className="flex gap-2 overflow-x-auto px-4 py-3 lg:flex-wrap lg:overflow-visible">
+      <div className="flex gap-2 overflow-x-auto px-4 py-3">
         {slots.map((s) => {
           const usado = Boolean(escolhas[s.id])
           const ativo = aberto === s.id

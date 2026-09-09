@@ -108,3 +108,24 @@
     mix-blend-mode: multiply;
   }
 }
+
+@layer components {
+  /**
+   * O papel do editor.
+   *
+   * A largura teto sai da altura que sobra na tela, para a altura derivada
+   * nunca passar do espaço disponível — é o que impede o desenho de escapar
+   * por baixo em telas curtas. Os 330px são o que header, ações e menu ocupam
+   * com a bandeja de peças aberta, que é o pior caso.
+   *
+   * Só vale onde há altura para caber tudo. Abaixo disso o editor rola, e
+   * espremer o desenho a 16px em nome de "tudo na tela" não ajudaria ninguém.
+   */
+  .papel-editor { width: 100%; max-width: 24rem; }
+
+  @media (min-height: 620px) {
+    .papel-editor {
+      max-width: min(24rem, calc((100dvh - 330px) * var(--proporcao, 0.73)));
+    }
+  }
+}

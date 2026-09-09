@@ -106,25 +106,27 @@ export function Editor() {
   }
 
   return (
-    // h-dvh + overflow-hidden: o editor cabe numa tela e nao rola. Quem manda
-    // no espaco e o desenho, que encolhe quando a bandeja de pecas abre.
-    //
-    // Uma coluna so, em qualquer tela. O layout de duas colunas dependia de
-    // largura, mas largura grande nao quer dizer tela grande: celular em modo
-    // "site para computador", deitado ou com fonte aumentada cai no mesmo
-    // breakpoint e desmonta. Aqui o editor e o que mais precisa ser previsivel.
-    //
-    // Em tela alta o suficiente nada rola, que e o caso normal do celular em
-    // pe. Em tela curta — deitado, teclado aberto, janela baixa — o editor
-    // rola, porque espremer tudo ali daria um desenho ilegivel.
-    <div className="min-h-dvh flex flex-col [@media(min-height:620px)]:h-dvh
-                    [@media(min-height:620px)]:overflow-hidden">
-      <div className="flex flex-col flex-1 min-h-0">
-      <header className="safe-top px-4 pt-3 pb-2 flex items-center justify-between shrink-0">
+    /*
+     * Layout deliberadamente simples: uma coluna, tudo no fluxo normal, e
+     * flex-wrap em toda linha de botões.
+     *
+     * As versões anteriores encaixavam flex dentro de flex com altura travada
+     * para caber tudo sem rolar. Isso funcionava nos tamanhos que eu testava e
+     * desmontava no resto — barra de ações por cima da bandeja de peças, chips
+     * empilhados, controles fora da moldura. Qualquer variação que eu não
+     * previsse (fonte do sistema aumentada, zoom, modo "site para computador",
+     * barra do navegador aparecendo e sumindo) muda a conta.
+     *
+     * Aqui nada se sobrepõe por construção: se algo não couber numa linha,
+     * quebra para a de baixo e a página rola. Rolar é um incômodo; controle em
+     * cima do desenho é um app quebrado.
+     */
+    <div className="min-h-dvh flex flex-col">
+      <header className="safe-top px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-2">
         <Link to="/" className="botao-neutro !px-3 !py-2" aria-label="Voltar ao início">
           <ArrowLeft size={18} />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <SeletorDeCor cor={cor} aoTrocar={setCor} />
           <button onClick={() => { registrarAcao('limpeza'); setEscolhas({}); setSalvo(false) }}
                   disabled={total === 0} aria-label="Limpar tudo" title="Limpar tudo"
@@ -141,10 +143,10 @@ export function Editor() {
       </header>
 
       {personagensVisiveis(catalogo).length > 1 && (
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto shrink-0">
+        <div className="px-4 pb-2 flex gap-2 flex-wrap">
           {personagensVisiveis(catalogo).map((p) => (
             <button key={p.id} onClick={() => trocarPersonagem(p)}
-              className={`shrink-0 px-4 py-2 rounded-full border-2 font-semibold text-sm transition-colors ${
+              className={`px-4 py-2 rounded-full border-2 font-semibold text-sm transition-colors ${
                 p.id === personagem.id ? 'border-ink bg-ink text-canvas' : 'border-ink/15 text-muted'}`}>
               {p.nome}
             </button>
@@ -152,20 +154,22 @@ export function Editor() {
         </div>
       )}
 
-      <main className="flex-1 min-h-0 px-4 pb-2 flex items-center justify-center">
-        <div className="papel moldura p-3 flex papel-editor"
+      <main className="px-4 pb-3 flex justify-center">
+        {/*
+         * A largura sai de min(100%, altura-teto x proporção): a altura fica
+         * limitada sem depender de clamp do navegador, e a proporção nunca
+         * distorce. Uma conta só, e o desenho cabe em qualquer tela.
+         */}
+        <div className="papel moldura p-3 flex"
              style={{
-               '--proporcao': personagem.enquadramento.w / personagem.enquadramento.h,
-             } as React.CSSProperties}>
-          <Desenho personagem={personagem} escolhas={escolhas} cor={cor}
-                   className="w-full h-auto m-auto" />
+               width: `min(100%, calc(52dvh * ${
+                 personagem.enquadramento.w / personagem.enquadramento.h}))`,
+             }}>
+          <Desenho personagem={personagem} escolhas={escolhas} cor={cor} className="w-full h-auto" />
         </div>
       </main>
 
-      </div>
-
-      <aside className="shrink-0 flex flex-col">
-      <div className="px-4 pb-2 flex items-center gap-2 shrink-0">
+      <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
         <button onClick={() => {
                   const sorteada = sortear(personagem)
                   registrarAcao('sorteio')
@@ -175,9 +179,8 @@ export function Editor() {
                       usuario.uid, Object.values(sorteada).filter(Boolean) as string[], personagem.id)
                   }
                   setEscolhas(sorteada); setSalvo(false)
-                }} className="botao-neutro !px-3 min-[400px]:!px-4 !py-2.5 shrink-0"
-                   aria-label="Sortear" title="Sortear">
-          <Dices size={18} /> <span className="hidden min-[400px]:inline">Sortear</span>
+                }} className="botao-neutro !px-3.5 !py-2.5" aria-label="Sortear" title="Sortear">
+          <Dices size={18} /> <span className="hidden min-[480px]:inline">Sortear</span>
         </button>
 
         <AcaoIcone rotulo="Ver numa camiseta" desabilitado={total === 0}
@@ -186,25 +189,28 @@ export function Editor() {
                    })}>
           <Shirt size={18} />
         </AcaoIcone>
-        <AcaoIcone rotulo="Ver na pele" onClick={() => { registrarAcao('prova_pele'); setPele(true) }}
-                   desabilitado={total === 0}>
+        <AcaoIcone rotulo="Ver na pele" desabilitado={total === 0}
+                   onClick={() => {
+                     registrarAcao('prova_pele')
+                     if (usuario) void registrarMarco(usuario.uid, 'provasPele')
+                     setPele(true)
+                   }}>
           <Scan size={18} />
         </AcaoIcone>
-        <AcaoIcone rotulo={salvo ? 'Salva' : 'Salvar'} onClick={salvar} desabilitado={total === 0 || salvando}>
+        <AcaoIcone rotulo={salvo ? 'Salva' : 'Salvar'} onClick={salvar}
+                   desabilitado={total === 0 || salvando}>
           {salvando ? <Loader2 size={18} className="animate-spin" />
             : salvo ? <Check size={18} className="text-brand" /> : <Save size={18} />}
         </AcaoIcone>
 
         <button onClick={() => setEnviar(true)} disabled={total === 0}
-                className="botao-principal !px-4 !py-2.5 flex-1 min-w-0 disabled:opacity-40">
+                className="botao-principal !px-4 !py-2.5 grow disabled:opacity-40">
           <Send size={18} /> Mandar
         </button>
       </div>
 
       <MenuDeSlots personagem={personagem} escolhas={escolhas} aberto={slotAberto}
                    aoAbrir={setSlotAberto} aoEscolher={escolher} cor={cor} />
-
-      </aside>
 
       {pele && <ProvaNaPele personagem={personagem} escolhas={escolhas} cor={cor} aoFechar={() => setPele(false)} />}
       {enviar && (
@@ -256,7 +262,7 @@ function MenuDeSlots({ personagem, escolhas, cor, aberto, aoAbrir, aoEscolher }:
   const slotAtual = slots.find((s) => s.id === aberto)
 
   return (
-    <nav className="border-t-2 border-ink/10 bg-surface safe-bottom shrink-0">
+    <nav className="border-t-2 border-ink/10 bg-surface safe-bottom mt-auto">
       {aberto && slotAtual && (
         <div className="animate-sheet-up border-b-2 border-ink/10">
           <div className="flex items-center justify-between px-5 py-3">

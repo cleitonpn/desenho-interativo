@@ -37,6 +37,7 @@ export function Desenho({ personagem, escolhas, cor, className = '', ajustado = 
 
   return (
     <div
+      data-desenho={personagem.id}
       className={`relative ${className}`}
       style={{ aspectRatio: `${vista.w} / ${vista.h}`, filter: CORES[cor].filtro }}
     >
@@ -48,9 +49,16 @@ export function Desenho({ personagem, escolhas, cor, className = '', ajustado = 
           draggable={false}
           className="absolute select-none"
           style={{
+            // Altura em % também, e não automática. Com a altura vindo da
+            // proporção do arquivo, bastava o container fugir um pouco da
+            // proporção do enquadramento para o topo de cada peça descer mais
+            // que a peça crescia — e os acessórios escorregavam uns dos outros.
+            // Fixando os quatro lados, cada peça ocupa o retângulo dela: se a
+            // caixa distorcer, o desenho distorce inteiro, sem desmontar.
             left: `${((peca.x - vista.x) / vista.w) * 100}%`,
             top: `${((peca.y - vista.y) / vista.h) * 100}%`,
             width: `${(peca.w / vista.w) * 100}%`,
+            height: `${(peca.h / vista.h) * 100}%`,
           }}
         />
       ))}

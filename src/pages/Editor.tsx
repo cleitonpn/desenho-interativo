@@ -147,12 +147,10 @@ export function Editor() {
       )}
 
       <main className="flex-1 min-h-0 px-4 pb-2 flex items-center justify-center">
-        <div className="papel moldura p-3 max-h-full max-w-full"
-             style={{
-               aspectRatio: `${personagem.enquadramento.w} / ${personagem.enquadramento.h}`,
-               height: '100%',
-             }}>
-          <Desenho personagem={personagem} escolhas={escolhas} cor={cor} className="w-full h-full" />
+        <div className="papel moldura p-3 w-full max-w-sm max-h-full flex lg:w-auto lg:max-w-none
+                        lg:h-full">
+          <Desenho personagem={personagem} escolhas={escolhas} cor={cor}
+                   className="w-full h-auto lg:w-auto lg:h-full m-auto" />
         </div>
       </main>
 

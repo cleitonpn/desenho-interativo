@@ -94,6 +94,28 @@
 
 @layer components {
   /**
+   * O passo.
+   *
+   * O ciclo é periódico e a velocidade é constante, então quem anima é o CSS,
+   * e não o laço do jogo: sai de graça na composição do navegador e não custa
+   * um cálculo por quadro. A perna direita usa a MESMA animação com meio ciclo
+   * de atraso — é o que faz uma subir enquanto a outra fica no chão.
+   *
+   * --fora diz para que lado é o lado de fora daquela perna, para o giro
+   * abrir o passo em vez de cruzar as patas. O giro é pequeno de propósito:
+   * num desenho de frente, o pé andando vai para a FRENTE, que é justamente a
+   * direção que não se vê. Exagerar o lado vira cancan, não caminhada — quem
+   * conta a história é a perna subindo.
+   */
+  @keyframes pata {
+    0%        { transform: translateY(0) rotate(0deg); }
+    25%       { transform: translateY(-4%) rotate(calc(var(--fora) * 5deg)); }
+    50%, 100% { transform: translateY(0) rotate(0deg); }
+  }
+}
+
+@layer components {
+  /**
    * Miniatura de peça solta (menu do editor, painel do Vital).
    *
    * O branco nas camadas do Vital é tinta opaca que esconde o que está

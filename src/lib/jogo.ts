@@ -51,17 +51,39 @@ export const MUNDO = {
    */
   itemPaira: 2.9,
   itemTamanho: 1.35,
+  /** Minhoca: anda devagar pelo chão e some se for pisada por cima. Encostar
+   *  de lado não faz nada — ela é bônus, não ameaça. */
+  minhoca: { largura: 1.05, altura: 0.5, velocidade: 1.3 },
+  /**
+   * Poça de tinta: o perigo. Fica parada no chão e tem de ser pulada. É baixa
+   * e estreita de propósito — um pulo cobre 4.8 unidades e ela tem 1.7, então
+   * quem vê a tempo passa por cima sem esforço. A dificuldade é notar.
+   */
+  poca: { largura: 1.4, altura: 0.36 },
+  pontosMinhoca: 25,
+  pontosAcessorio: 50,
+  pontosRepetida: 15,
+  /**
+   * Piscando depois do susto. Generoso de propósito: quem está aprendendo
+   * passa a partida no ar e cai onde calha, e sem esta folga atravessava uma
+   * sequência de poças perdendo uma peça em cada.
+   */
+  invencivel: 1.8,
   duracao: 60,
   /** Distância entre caixas. Na vertical o zoom aproximou tudo, e a janela
    *  passou a mostrar ~10 unidades de largura: com vãos maiores, a próxima
    *  caixa nasceria fora de vista e a corrida viraria caminhada às cegas. */
-  vaoMin: 5.5,
-  vaoMax: 9,
+  vaoMin: 6,
+  vaoMax: 11.5,
   /** Sai de cena o que ficou para trás disto. Ainda dá para voltar buscar. */
   alcance: 60,
 } as const
 
 export interface Caixa { id: number; x: number; pecaId: string; aberta: boolean }
+
+export interface Minhoca { id: number; x: number; vx: number; viva: boolean }
+
+export interface Poca { id: number; x: number }
 
 export interface Item {
   id: number
@@ -93,11 +115,18 @@ export interface Estado {
   bicho: Bicho
   caixas: Caixa[]
   itens: Item[]
+  minhocas: Minhoca[]
+  pocas: Poca[]
   camera: number
   /** Largura visível em unidades — depende do formato da tela. */
   larguraVista: number
-  /** Ids de peça resgatados nesta partida, sem repetir. É a pontuação. */
+  /** Ids de peça resgatados nesta partida, sem repetir. É a coleção. */
   resgatadas: string[]
+  /** A pontuação: peça vestida e minhoca pisada somam aqui. É o número do
+   *  ranking, enquanto `resgatadas` é o quanto do acervo a pessoa já viu. */
+  pontos: number
+  /** Segundos restantes de invencibilidade depois de pisar numa poça. */
+  piscando: number
   /** O que está vestido agora: no máximo um id por slot, como no editor. */
   vestido: Escolhas
   proximoX: number
@@ -125,6 +154,8 @@ export type Comando = { esquerda: boolean; direita: boolean; pular: boolean }
 export type Evento =
   | { tipo: 'abriu'; peca: Peca }
   | { tipo: 'pegou'; peca: Peca; inedita: boolean }
+  | { tipo: 'pisou'; pontos: number }
+  | { tipo: 'sujou'; peca: Peca | null }
   | { tipo: 'fim' }
 
 /**
@@ -151,8 +182,8 @@ export function comecar(personagem: Personagem, larguraVista: number, semente = 
   const estado: Estado = {
     tempo: MUNDO.duracao,
     bicho: { x: 3, y: 0, vy: 0, noChao: true, direcao: 1, passo: 0 },
-    caixas: [], itens: [], camera: 0, larguraVista,
-    resgatadas: [], vestido: {},
+    caixas: [], itens: [], minhocas: [], pocas: [], camera: 0, larguraVista,
+    resgatadas: [], pontos: 0, piscando: 0, vestido: {},
     proximoX: 9, bufferPulo: 0, seq: 0,
     rng: geradorComSemente(semente),
     acervo: pecasJogaveis(personagem),
@@ -181,8 +212,44 @@ function gerarAdiante(e: Estado): void {
   while (e.proximoX < ate) {
     const peca = sortearPeca(e)
     if (!peca) return
-    e.caixas.push({ id: e.seq++, x: e.proximoX, pecaId: peca.id, aberta: false })
-    e.proximoX += MUNDO.vaoMin + e.rng() * (MUNDO.vaoMax - MUNDO.vaoMin)
+    const x = e.proximoX
+    e.caixas.push({ id: e.seq++, x, pecaId: peca.id, aberta: false })
+    const vao = MUNDO.vaoMin + e.rng() * (MUNDO.vaoMax - MUNDO.vaoMin)
+    e.proximoX = x + vao
+
+    // Começa mansa e vai apertando. Sem rampa, ou o início já é difícil demais
+    // para quem nunca jogou, ou o fim continua sendo um passeio.
+    const dificuldade = Math.min(x / 220, 1)
+    // Nada de perigo nas primeiras caixas: dá tempo de entender o jogo antes
+    // de ser punido por não entender.
+    if (x < 22) continue
+
+    // O chão entre uma caixa e a outra, de fora da zona de pouso das duas.
+    const inicio = x + 2.4
+    const fim = x + vao - 2.4
+    // Vão curto não recebe perigo nenhum. Com 1.7 de poça espremida entre duas
+    // zonas de pulo, a galinha caía da caixa direto na tinta — não havia
+    // decisão, só castigo. O perigo precisa de espaço para ser visto e evitado.
+    if (fim - inicio < 3.2) continue
+
+    // Cada um na sua metade do vão: assim minhoca e poça nunca nascem uma em
+    // cima da outra, e não vira uma decisão impossível de ler a tempo.
+    const meio = (inicio + fim) / 2
+    if (e.rng() < 0.4 + dificuldade * 0.25) {
+      e.minhocas.push({
+        id: e.seq++, x: inicio + e.rng() * (meio - inicio),
+        vx: -(0.9 + e.rng() * 0.8), viva: true,
+      })
+    }
+    // A poça demora mais a aparecer que a minhoca, e é mais rara.
+    //
+    // Quem só martela o pulo passa a partida no ar e cai onde calha: com a
+    // densidade anterior levava sete banhos de tinta por partida e terminava
+    // sem nada vestido. O castigo tem de ser do jogador que não olhou, não do
+    // que ainda não aprendeu.
+    if (x > 45 && e.rng() < 0.12 + dificuldade * 0.26) {
+      e.pocas.push({ id: e.seq++, x: meio + e.rng() * (fim - meio) })
+    }
   }
 }
 
@@ -193,6 +260,37 @@ function acharPeca(e: Estado, id: string): Peca | undefined {
 function encosta(ax: number, aw: number, ay: number, ah: number,
                  bx: number, bw: number, by: number, bh: number): boolean {
   return Math.abs(ax - bx) < (aw + bw) / 2 && ay < by + bh && by < ay + ah
+}
+
+/**
+ * Pisar na tinta faz cair o acessório mais recente — e ele cai PARA TRÁS, no
+ * chão, de onde dá para buscar de volta.
+ *
+ * É por isso que existe o botão de voltar. Perder a peça de vez seria castigo
+ * demais para um jogo de um minuto; deixá-la largada no caminho transforma o
+ * erro numa decisão: vale a pena gastar quatro segundos voltando, ou é melhor
+ * seguir em frente e abrir mais duas caixas?
+ *
+ * Sem nada vestido não há o que derrubar, e aí o preço é tempo.
+ */
+function derrubarPeca(e: Estado): Peca | null {
+  const vestidas = new Set(Object.values(e.vestido).filter(Boolean) as string[])
+  // A mais recente das que estão no corpo: `resgatadas` guarda a ordem.
+  const id = [...e.resgatadas].reverse().find((x) => vestidas.has(x))
+  if (!id) { e.tempo = Math.max(0, e.tempo - 3); return null }
+
+  const peca = acharPeca(e, id)
+  e.resgatadas = e.resgatadas.filter((x) => x !== id)
+  e.pontos = Math.max(0, e.pontos - MUNDO.pontosAcessorio)
+  if (peca) e.vestido = { ...e.vestido, [peca.slot as SlotId]: undefined }
+  if (peca) {
+    e.itens.push({
+      id: e.seq++, pecaId: peca.id,
+      x: e.bicho.x, y: MUNDO.itemPaira + 0.6,
+      vx: -(2.4 + e.rng() * 1.2), vy: 5, pousado: false, pego: false,
+    })
+  }
+  return peca ?? null
 }
 
 /**
@@ -278,8 +376,37 @@ export function passo(e: Estado, dt: number, cmd: Comando): Evento[] {
     if (!peca) continue
     const inedita = !e.resgatadas.includes(peca.id)
     if (inedita) e.resgatadas.push(peca.id)
+    e.pontos += inedita ? MUNDO.pontosAcessorio : MUNDO.pontosRepetida
     e.vestido = { ...e.vestido, [peca.slot as SlotId]: peca.id }
     eventos.push({ tipo: 'pegou', peca, inedita })
+  }
+
+  for (const m of e.minhocas) {
+    if (!m.viva) continue
+    m.x += m.vx * t
+    const encostou = encosta(
+      b.x, MUNDO.colisao.largura, b.y, MUNDO.colisao.altura,
+      m.x, MUNDO.minhoca.largura, 0, MUNDO.minhoca.altura)
+    // Só vale pisando: encostar de lado atravessa. A minhoca é prêmio de
+    // pontaria, não armadilha — quem erra perde o ponto, não a partida.
+    if (!encostou || b.vy >= 0) continue
+    m.viva = false
+    e.pontos += MUNDO.pontosMinhoca
+    b.vy = 9 // quica, como manda o gênero
+    eventos.push({ tipo: 'pisou', pontos: MUNDO.pontosMinhoca })
+  }
+
+  e.piscando = Math.max(0, e.piscando - t)
+  if (e.piscando === 0) {
+    for (const p of e.pocas) {
+      const sujou = encosta(
+        b.x, MUNDO.colisao.largura, b.y, MUNDO.colisao.altura,
+        p.x, MUNDO.poca.largura, 0, MUNDO.poca.altura)
+      if (!sujou) continue
+      e.piscando = MUNDO.invencivel
+      eventos.push({ tipo: 'sujou', peca: derrubarPeca(e) })
+      break
+    }
   }
 
   // Câmera à esquerda do bicho: sobra tela à frente, que é para onde se anda.
@@ -289,6 +416,8 @@ export function passo(e: Estado, dt: number, cmd: Comando): Evento[] {
   const limite = e.camera - MUNDO.alcance
   e.caixas = e.caixas.filter((c) => c.x > limite)
   e.itens = e.itens.filter((i) => !i.pego && i.x > limite)
+  e.minhocas = e.minhocas.filter((m) => m.viva && m.x > limite)
+  e.pocas = e.pocas.filter((p) => p.x > limite)
 
   return eventos
 }

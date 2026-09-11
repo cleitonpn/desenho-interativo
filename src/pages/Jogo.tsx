@@ -7,7 +7,7 @@ import {
 } from '../lib/catalogo'
 import {
   comecar, guardarPartida, MUNDO, passo, pecasJogaveis,
-  type Caixa, type Comando, type Estado, type Item,
+  type Caixa, type Comando, type Estado, type Item, type Minhoca, type Poca,
 } from '../lib/jogo'
 import { useAuth } from '../contexts/AuthContext'
 import { registrarDescoberta } from '../lib/progresso'
@@ -59,10 +59,15 @@ export function Jogo() {
   // mediria null, desistiria, e nunca mais rodaria.
   const [vista, setVista] = useState<HTMLDivElement | null>(null)
   const [medidas, setMedidas] = useState({ escala: 0, larguraVista: 13.3 })
-  const [cena, setCena] = useState<{ caixas: Caixa[]; itens: Item[] }>({ caixas: [], itens: [] })
+  const [cena, setCena] = useState<{ caixas: Caixa[]; itens: Item[]; minhocas: Minhoca[]; pocas: Poca[] }>(
+    { caixas: [], itens: [], minhocas: [], pocas: [] })
+  const [pontos, setPontos] = useState(0)
+  // Dois booleanos, e não a fase do passo: o ciclo da perna é periódico e vive
+  // no CSS, então o React só refaz o desenho quando ela começa ou para.
+  const [patas, setPatas] = useState({ andando: false, noAr: false })
   const [vestido, setVestido] = useState<Escolhas>({})
   const [resgatadas, setResgatadas] = useState<string[]>([])
-  const [aviso, setAviso] = useState<{ peca: Peca; inedita: boolean } | null>(null)
+  const [aviso, setAviso] = useState<{ texto: string; tom: 'bom' | 'neutro' | 'ruim' } | null>(null)
 
   useEffect(() => {
     carregarCatalogo()
@@ -103,9 +108,10 @@ export function Jogo() {
     estadoRef.current = comecar(personagem, medidas.larguraVista)
     chaveRef.current = ''
     jaBaixadas.current.clear()
-    setCena({ caixas: [], itens: [] })
+    setCena({ caixas: [], itens: [], minhocas: [], pocas: [] })
     setVestido({})
     setResgatadas([])
+    setPontos(0)
     setAviso(null)
     setFase('jogando')
   }
@@ -122,17 +128,20 @@ export function Jogo() {
 
     const alturaBicho = MUNDO.alturaBicho * escala
     if (bichoRef.current) {
-      const ginga = Math.sin(b.passo * Math.PI * 2)
       const andando = comandoRef.current.esquerda || comandoRef.current.direita
-      // Squash and stretch: estica subindo, achata caindo. É o que dá peso a um
-      // boneco que não tem ciclo de animação nenhum.
+      // Squash and stretch: estica subindo, achata caindo. Dá peso ao salto.
       const estica = b.noChao ? 0 : Math.max(-0.13, Math.min(0.13, b.vy * 0.012))
-      const saltito = b.noChao && andando ? Math.abs(ginga) * 0.05 : 0
-      const inclina = b.noChao ? ginga * 5 : b.direcao * 7
+      // O corpo sobe e desce no ritmo do passo. O balanço de lado que havia
+      // antes saiu: quem anda são as patas, e o corpo jogando de um lado para
+      // o outro parecia que a galinha escorregava, não que caminhava.
+      const saltito = b.noChao && andando ? Math.abs(Math.sin(b.passo * Math.PI * 2)) * 0.045 : 0
       bichoRef.current.style.transform =
         `translate3d(${(b.x - e.camera) * escala - (alturaBicho * 0.7275) / 2}px,` +
         `${-(b.y + saltito) * escala + alturaBicho * AFUNDA}px, 0)` +
-        ` rotate(${inclina}deg) scale(${1 - estica}, ${1 + estica})`
+        ` scale(${1 - estica}, ${1 + estica})`
+      // Pisca depois da poça, para ficar claro que o susto já passou.
+      bichoRef.current.style.opacity =
+        e.piscando > 0 && Math.floor(e.piscando * 12) % 2 === 0 ? '0.35' : '1'
     }
     if (sombraRef.current) {
       // A sombra fica no chão e encolhe com a altura: sem ela não dá para saber
@@ -151,6 +160,17 @@ export function Jogo() {
       no.style.transform =
         `translate3d(${(c.x - e.camera) * escala - largCaixa / 2}px,` +
         `${-MUNDO.caixa.base * escala}px, 0)`
+    }
+
+    const largMinhoca = MUNDO.minhoca.largura * escala
+    for (const m of e.minhocas) {
+      const no = nos.get(`m${m.id}`)
+      if (no) no.style.transform = `translate3d(${(m.x - e.camera) * escala - largMinhoca / 2}px, 0, 0)`
+    }
+    const largPoca = MUNDO.poca.largura * escala
+    for (const p of e.pocas) {
+      const no = nos.get(`p${p.id}`)
+      if (no) no.style.transform = `translate3d(${(p.x - e.camera) * escala - largPoca / 2}px, 0, 0)`
     }
 
     const largItem = MUNDO.itemTamanho * escala
@@ -181,6 +201,11 @@ export function Jogo() {
       const eventos = passo(e, dt, comandoRef.current)
       desenhar(e)
 
+      // Só dois booleanos chegam ao React, e só quando mudam de verdade.
+      const andando = comandoRef.current.esquerda || comandoRef.current.direita
+      setPatas((antes) => (antes.andando === andando && antes.noAr === !e.bicho.noChao
+        ? antes : { andando, noAr: !e.bicho.noChao }))
+
       for (const ev of eventos) {
         if (ev.tipo === 'fim') {
           setVestido({ ...e.vestido })
@@ -192,17 +217,35 @@ export function Jogo() {
         if (ev.tipo === 'pegou') {
           setVestido({ ...e.vestido })
           setResgatadas([...e.resgatadas])
-          setAviso({ peca: ev.peca, inedita: ev.inedita })
+          setPontos(e.pontos)
+          setAviso({ texto: ev.peca.rotulo ?? ev.peca.id, tom: ev.inedita ? 'bom' : 'neutro' })
+        }
+        if (ev.tipo === 'pisou') {
+          setPontos(e.pontos)
+          setAviso({ texto: `+${ev.pontos}`, tom: 'bom' })
+        }
+        if (ev.tipo === 'sujou') {
+          setVestido({ ...e.vestido })
+          setResgatadas([...e.resgatadas])
+          setPontos(e.pontos)
+          setAviso({
+            texto: ev.peca ? `Caiu: ${ev.peca.rotulo ?? ev.peca.id}` : 'Tinta! −3s',
+            tom: 'ruim',
+          })
         }
       }
 
       // A lista só volta ao React quando muda de verdade — nascer uma caixa,
       // abrir, sair de cena. O resto do quadro é só transform.
       const chave = e.caixas.map((c) => `${c.id}${c.aberta ? 'a' : ''}`).join() +
-        '|' + e.itens.map((i) => `${i.id}${i.pousado ? 'p' : ''}`).join()
+        '|' + e.itens.map((i) => `${i.id}${i.pousado ? 'p' : ''}`).join() +
+        '|' + e.minhocas.map((m) => m.id).join() + '|' + e.pocas.map((p) => p.id).join()
       if (chave !== chaveRef.current) {
         chaveRef.current = chave
-        setCena({ caixas: [...e.caixas], itens: [...e.itens] })
+        setCena({
+          caixas: [...e.caixas], itens: [...e.itens],
+          minhocas: [...e.minhocas], pocas: [...e.pocas],
+        })
         // Baixa só o que está prestes a aparecer. O editor já aprendeu essa:
         // carregar as 99 peças de uma vez custa 3,7 MB e não serve para nada.
         for (const c of e.caixas) {
@@ -278,12 +321,15 @@ export function Jogo() {
         <Link to="/" className="botao-neutro !px-3 !py-2" aria-label="Voltar ao início">
           <ArrowLeft size={18} />
         </Link>
-        <div className="flex items-center gap-3">
-          <span className="etiqueta">Resgatados</span>
+        <div className="flex items-center gap-3 flex-wrap justify-end">
           <span className="font-display text-xl tabular-nums leading-none">
-            {resgatadas.length}<span className="text-faint text-sm">/{acervo.length}</span>
+            {pontos}<span className="etiqueta ml-1">pts</span>
           </span>
-          <span ref={relogioRef} className="font-display text-xl tabular-nums leading-none text-brand w-12 text-right">
+          <span className="font-display text-base tabular-nums leading-none text-muted">
+            {resgatadas.length}<span className="text-faint text-xs">/{acervo.length}</span>
+          </span>
+          <span ref={relogioRef}
+                className="font-display text-xl tabular-nums leading-none text-brand w-12 text-right">
             {MUNDO.duracao}s
           </span>
         </div>
@@ -311,6 +357,22 @@ export function Jogo() {
             <div ref={sombraRef} className="absolute left-0 bottom-0 rounded-[50%] bg-ink"
                  style={{ width: alturaBicho * 0.56, height: alturaBicho * 0.1,
                           marginBottom: -alturaBicho * 0.05 }} />
+
+            {cena.pocas.map((p) => (
+              <div key={p.id} ref={registrar(`p${p.id}`)} className="absolute left-0 bottom-0 text-ink"
+                   style={{ width: MUNDO.poca.largura * escala, height: MUNDO.poca.altura * escala }}>
+                <PocaDesenho />
+              </div>
+            ))}
+
+            {cena.minhocas.map((m) => (
+              <div key={m.id} ref={registrar(`m${m.id}`)}
+                   className="absolute left-0 bottom-0 text-brand animate-pairar"
+                   style={{ width: MUNDO.minhoca.largura * escala,
+                            height: MUNDO.minhoca.altura * escala }}>
+                <MinhocaDesenho />
+              </div>
+            ))}
 
             {cena.caixas.map((c) => (
               <div key={c.id} ref={registrar(`c${c.id}`)}
@@ -344,22 +406,26 @@ export function Jogo() {
 
             <div ref={bichoRef} className="absolute left-0 bottom-0 origin-bottom"
                  style={{ width: alturaBicho * 0.7275, height: alturaBicho }}>
-              <Desenho personagem={personagem} escolhas={vestido} cor="vermelho" className="w-full h-full" />
+              <Desenho personagem={personagem} escolhas={vestido} cor="vermelho"
+                       className="w-full h-full" patas={patas} />
             </div>
           </div>
 
           {aviso && (
             <div className="absolute left-1/2 top-3 -translate-x-1/2 pointer-events-none animate-pop">
-              <span className={`px-3 py-1.5 rounded-full border-2 border-ink text-xs font-semibold
-                                whitespace-nowrap ${aviso.inedita ? 'bg-brand text-white' : 'bg-surface text-muted'}`}>
-                {aviso.inedita ? '✦ ' : ''}{aviso.peca.rotulo ?? aviso.peca.id}
+              <span className={`px-3 py-1.5 rounded-full border-2 text-xs font-semibold
+                                whitespace-nowrap ${
+                aviso.tom === 'bom' ? 'border-ink bg-brand text-white'
+                : aviso.tom === 'ruim' ? 'border-ink bg-ink text-canvas'
+                : 'border-ink bg-surface text-muted'}`}>
+                {aviso.tom === 'bom' ? '✦ ' : aviso.tom === 'ruim' ? '✱ ' : ''}{aviso.texto}
               </span>
             </div>
           )}
 
           {fase !== 'jogando' && (
             <Cartaz fase={fase} personagem={personagem} vestido={vestido} resgatadas={resgatadas}
-                    total={acervo.length} catalogo={catalogo} personagemId={personagemId}
+                    pontos={pontos} total={acervo.length} catalogo={catalogo} personagemId={personagemId}
                     aoTrocar={setPersonagemId} aoJogar={jogar}
                     aoEditar={() => {
                       guardarPartida(personagem.id, vestido)
@@ -369,7 +435,7 @@ export function Jogo() {
         </div>
       </main>
 
-      <Coleta resgatadas={resgatadas} porId={porId} jogando={fase === 'jogando'} />
+      <Coleta resgatadas={resgatadas} porId={porId} />
 
       <div className="mt-auto">
         <Controles comandoRef={comandoRef} ativo={fase === 'jogando'} />
@@ -378,19 +444,62 @@ export function Jogo() {
   )
 }
 
+function Regra({ texto, children }: { texto: string; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      {children}{texto}
+    </span>
+  )
+}
+
+/**
+ * Minhoca e poça são desenhadas em código, e não em PNG: o Vital não precisa
+ * desenhar nada para o jogo existir, e elas seguem a mesma linguagem grossa e
+ * preta das caixas. Se um dia ele quiser desenhá-las à mão, é trocar aqui.
+ */
+function MinhocaDesenho() {
+  return (
+    <svg viewBox="0 0 44 18" className="w-full h-full overflow-visible" aria-hidden>
+      <path d="M3 15 Q 9 3 15 13 T 27 12 Q 32 11 34 6"
+            fill="none" stroke="currentColor" strokeWidth="4.6" strokeLinecap="round" />
+      <circle cx="36" cy="5" r="4.4" fill="currentColor" />
+      <circle cx="37.6" cy="4" r="1.1" fill="rgb(var(--c-surface))" />
+    </svg>
+  )
+}
+
+function PocaDesenho() {
+  return (
+    <svg viewBox="0 0 72 16" preserveAspectRatio="none" className="w-full h-full" aria-hidden>
+      <path d="M4 16 C 2 9 8 5 15 7 C 21 8 24 2 33 4 C 40 5 44 10 51 8
+               C 58 6 66 8 68 16 Z" fill="currentColor" />
+    </svg>
+  )
+}
+
 /**
  * O que já caiu nesta partida. Ocupa a faixa que sobra entre a janela e o
  * comando com a única coisa que o jogador quer olhar ali: o que ele ganhou.
  */
-function Coleta({ resgatadas, porId, jogando }: {
-  resgatadas: string[]; porId: Map<string, Peca>; jogando: boolean
-}) {
+function Coleta({ resgatadas, porId }: { resgatadas: string[]; porId: Map<string, Peca> }) {
+  // Antes de juntar qualquer coisa esta faixa mostra as regras, com os mesmos
+  // símbolos que aparecem no jogo. Ler "pule por baixo da caixa" ao lado do
+  // desenho da caixa ensina mais rápido do que um parágrafo no cartaz.
   if (!resgatadas.length) {
     return (
-      <p className="px-5 py-4 text-xs text-muted text-center leading-relaxed">
-        {jogando ? <>Pule por baixo das caixas. O acessório salta fora — pule <em>nele</em> para vestir.</>
-          : 'O que você resgatar aparece aqui.'}
-      </p>
+      <div className="px-4 py-3 flex flex-wrap justify-center items-center gap-x-4 gap-y-2
+                      text-[11px] text-muted">
+        <Regra texto="pule por baixo">
+          <span className="w-6 h-[18px] rounded border-2 border-ink bg-surface grid place-items-center
+                           font-display text-[9px] text-brand leading-none">?</span>
+        </Regra>
+        <Regra texto={`pise em cima · ${MUNDO.pontosMinhoca} pts`}>
+          <span className="w-6 h-[14px] text-brand"><MinhocaDesenho /></span>
+        </Regra>
+        <Regra texto="pule por cima">
+          <span className="w-6 h-[10px] text-ink"><PocaDesenho /></span>
+        </Regra>
+      </div>
     )
   }
   return (
@@ -417,8 +526,9 @@ function Coleta({ resgatadas, porId, jogando }: {
  * Telas de abertura e de fim. Ficam DENTRO da janela de jogo, e não como
  * modal sobre a página: assim não há chance de cobrir os controles.
  */
-function Cartaz({ fase, personagem, vestido, resgatadas, total, catalogo, personagemId, aoTrocar, aoJogar, aoEditar }: {
-  fase: Fase; personagem: Personagem; vestido: Escolhas; resgatadas: string[]; total: number
+function Cartaz({ fase, personagem, vestido, resgatadas, pontos, total, catalogo, personagemId, aoTrocar, aoJogar, aoEditar }: {
+  fase: Fase; personagem: Personagem; vestido: Escolhas; resgatadas: string[]
+  pontos: number; total: number
   catalogo: Catalogo; personagemId: string | null
   aoTrocar: (id: string) => void; aoJogar: () => void; aoEditar: () => void
 }) {
@@ -434,11 +544,12 @@ function Cartaz({ fase, personagem, vestido, resgatadas, total, catalogo, person
           {/* Sem artigo antes do nome: o Vital já desenha outros bichos, e
               "do/da" erraria o gênero na metade deles. */}
           <h1 className="font-display text-xl leading-tight">{personagem.nome} na corrida</h1>
-          <p className="text-xs text-muted max-w-[32ch] leading-relaxed">
-            Pule por baixo das caixas para soltar um acessório. Depois pule <em>nele</em> para
-            vestir — ou passe por baixo, se não quiser.
+          {/* O cartaz fica curto de propósito: as regras moram na faixa
+              abaixo da janela, que estava vazia. Um cartaz com tudo escrito
+              empurrava o botão de começar para fora da vista em tela pequena. */}
+          <p className="text-xs text-muted max-w-[30ch] leading-relaxed">
+            Junte acessórios em {MUNDO.duracao} segundos. As regras estão logo abaixo.
           </p>
-          <p className="etiqueta">{MUNDO.duracao} segundos</p>
           {bichos.length > 1 && (
             <div className="flex gap-2 flex-wrap justify-center">
               {bichos.map((b) => (
@@ -457,13 +568,10 @@ function Cartaz({ fase, personagem, vestido, resgatadas, total, catalogo, person
       ) : (
         <>
           <p className="etiqueta">Fim da corrida</p>
-          <p className="font-display text-3xl leading-none">
-            {resgatadas.length}<span className="text-faint text-lg">/{total}</span>
-          </p>
+          <p className="font-display text-3xl leading-none">{pontos} pts</p>
           <p className="text-xs text-muted -mt-1">
-            {resgatadas.length === 0 ? 'Nenhum acessório desta vez.'
-              : resgatadas.length === 1 ? 'acessório resgatado'
-              : 'acessórios resgatados'}
+            {resgatadas.length === 0 ? 'nenhum acessório desta vez'
+              : `${resgatadas.length} ${resgatadas.length === 1 ? 'acessório' : 'acessórios'} de ${total}`}
           </p>
           <div className="h-[34%] aspect-[0.7275] shrink-0">
             <Desenho personagem={personagem} escolhas={vestido} cor="vermelho" className="w-full h-full" />

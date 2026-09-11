@@ -1228,7 +1228,13 @@
           "rotulo": "Rasteira",
           "personagem": "galinha"
         }
-      ]
+      ],
+      "pernas": {
+        "quadril": 0.6995,
+        "meio": 0.5315,
+        "esquerda": 0.463,
+        "direita": 0.5995
+      }
     }
   ],
   "paleta": {

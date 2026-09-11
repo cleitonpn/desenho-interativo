@@ -43,6 +43,23 @@ export interface Personagem {
    */
   enquadramento: { x: number; y: number; w: number; h: number }
   ordemCamadas: (SlotId | 'base')[]
+  /**
+   * Onde estao as patas dentro do desenho, em fracao do enquadramento. Serve
+   * ao jogo, que recorta essa regiao para girar cada perna — no PSD do Vital
+   * elas fazem parte do corpo, nao sao camada separada.
+   *
+   * Opcional de proposito: personagem sem esta medida simplesmente nao anima
+   * as patas, em vez de quebrar. Sai do script ferramentas-patas.py.
+   */
+  pernas?: {
+    /** Altura do quadril: acima disto e tronco, abaixo e perna. */
+    quadril: number
+    /** Linha vertical que separa uma perna da outra. */
+    meio: number
+    /** Centro de cada perna, que e o eixo de giro dela. */
+    esquerda: number
+    direita: number
+  }
   base: string
   pecas: Peca[]
   oculto?: boolean

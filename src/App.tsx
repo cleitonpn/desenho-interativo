@@ -15,6 +15,7 @@ import { Privacidade } from './pages/Privacidade'
 import { Sobre } from './pages/Sobre'
 import { Tattoos } from './pages/Tattoos'
 import { Loja } from './pages/Loja'
+import { Jogo } from './pages/Jogo'
 
 // O painel só interessa ao Vital: carregado à parte para não pesar no
 // carregamento de quem entrou para montar um bicho.
@@ -38,6 +39,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/loja" element={<Loja />} />
+        <Route path="/jogo" element={<Jogo />} />
         <Route path="/tattoos" element={<Tattoos />} />
         <Route path="/sobre" element={<Sobre />} />
         <Route path="/privacidade" element={<Privacidade />} />

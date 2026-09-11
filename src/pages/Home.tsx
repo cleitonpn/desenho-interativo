@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Flame, Images, Instagram, Palette, ShoppingBag, Sparkle, UserRound,
+  Flame, Gamepad2, Images, Instagram, Palette, ShoppingBag, Sparkle, UserRound,
 } from 'lucide-react'
 import { MARCA } from '../config/marca'
 import { Desenho } from '../components/Desenho'
@@ -118,6 +118,8 @@ export function Home() {
         <nav className="grid grid-cols-2 gap-3 mt-4">
           <Atalho para="/montar" destaque icone={<Palette size={22} />} grande
                   titulo="Montar" texto={usuario ? 'Escolha o bicho e os acessórios' : 'Entre e monte o seu'} />
+          <Atalho para="/jogo" icone={<Gamepad2 size={20} />}
+                  titulo="Corrida" texto="Ganhe acessórios pulando" />
           <Atalho para="/loja" icone={<ShoppingBag size={20} />}
                   titulo="Loja" texto="Camisetas e cerâmicas" />
           <Atalho para="/tattoos" icone={<Flame size={20} />}

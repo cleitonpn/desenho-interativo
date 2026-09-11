@@ -35,6 +35,7 @@ export default {
         'sheet-up': { from: { transform: 'translateY(100%)' }, to: { transform: 'translateY(0)' } },
         'pop': { '0%': { transform: 'scale(.8)', opacity: '0' }, '60%': { transform: 'scale(1.04)' }, '100%': { transform: 'scale(1)', opacity: '1' } },
         'deslizar': { from: { transform: 'translateX(0)' }, to: { transform: 'translateX(-50%)' } },
+        'pairar': { '0%, 100%': { transform: 'translateY(4%)' }, '50%': { transform: 'translateY(-8%)' } },
       },
       animation: {
         'fade-up': 'fade-up .28s cubic-bezier(.2,.8,.2,1) both',
@@ -42,6 +43,7 @@ export default {
         'sheet-up': 'sheet-up .3s cubic-bezier(.2,.9,.2,1) both',
         'pop': 'pop .32s cubic-bezier(.2,.8,.2,1) both',
         'deslizar': 'deslizar 40s linear infinite',
+        'pairar': 'pairar 1.5s ease-in-out infinite',
       },
     },
   },

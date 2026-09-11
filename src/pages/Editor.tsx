@@ -12,6 +12,7 @@ import {
   personagensVisiveis, slotsDisponiveis,
 } from '../lib/catalogo'
 import { contarPecas, sortear } from '../lib/composicao'
+import { resgatarPartida } from '../lib/jogo'
 import { preAquecer } from '../lib/exportar'
 import { salvarCriacao } from '../lib/criacoes'
 import { useAuth } from '../contexts/AuthContext'
@@ -27,7 +28,10 @@ export function Editor() {
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
   // O desenho do dia chega pela navegação: abrir o editor já com ele montado
   // evita pedir para a pessoa refazer o que acabou de ver.
-  const vindo = useLocation().state as { escolhas?: Escolhas; personagem?: string } | null
+  // Quem chega do jogo pode ter passado pela tela de login no caminho, e isso
+  // apaga o state da rota. A partida guardada na sessão sobrevive a esse pulo.
+  const daRota = useLocation().state as { escolhas?: Escolhas; personagem?: string } | null
+  const vindo = daRota ?? resgatarPartida()
   const [escolhas, setEscolhas] = useState<Escolhas>(vindo?.escolhas ?? {})
   const [personagemId, setPersonagemId] = useState<string | null>(vindo?.personagem ?? null)
   const [cor, setCor] = useState<CorId>('vermelho')

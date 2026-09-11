@@ -17,6 +17,27 @@ export const SLOTS: { id: SlotId; rotulo: string; emoji: string }[] = [
 let cache: Catalogo | null = null
 
 /**
+ * Quanto o app espera pelo Firestore antes de seguir sem ele.
+ *
+ * As peças do painel são um acréscimo — o catálogo do PSD já basta para o app
+ * funcionar. Mas o SDK do Firestore não desiste sozinho: sem resposta (avião,
+ * wi-fi de empresa, bloqueador de anúncio, Firestore fora do ar) ele tenta de
+ * novo para sempre, e a promessa nunca resolve nem rejeita. O try/catch aqui
+ * embaixo não pega isso, porque não há erro nenhum — só silêncio. Sem este
+ * prazo, a tela fica no "carregando" e não sai mais.
+ */
+const ESPERA_DA_NUVEM = 5000
+
+const DEMOROU = Symbol('demorou')
+
+function comPrazo<T>(promessa: Promise<T>): Promise<T | typeof DEMOROU> {
+  return Promise.race([
+    promessa,
+    new Promise<typeof DEMOROU>((ok) => setTimeout(() => ok(DEMOROU), ESPERA_DA_NUVEM)),
+  ])
+}
+
+/**
  * O catálogo tem duas origens: o arquivo estático, com as peças que vieram do
  * PSD, e o Firestore, com as que o Vital subiu pelo painel. Uma peça do painel
  * com o mesmo id substitui a estática, o que permite corrigir uma sem deploy.
@@ -27,9 +48,12 @@ export async function carregarCatalogo(): Promise<Catalogo> {
   if (!resp.ok) throw new Error('Não consegui carregar o catálogo de peças.')
   const base = (await resp.json()) as Catalogo
 
-  const [remotas, personagensNovos] = await Promise.all([
-    listarPecasRemotas(), listarPersonagensRemotos(),
+  const [respostaPecas, respostaPersonagens] = await Promise.all([
+    comPrazo(listarPecasRemotas()), comPrazo(listarPersonagensRemotos()),
   ])
+  const nuvemRespondeu = respostaPecas !== DEMOROU && respostaPersonagens !== DEMOROU
+  const remotas = respostaPecas === DEMOROU ? [] : respostaPecas
+  const personagensNovos = respostaPersonagens === DEMOROU ? [] : respostaPersonagens
 
   // Personagens do painel se somam aos do arquivo; um com o mesmo id substitui.
   const porPersonagem = new Map<string, Personagem>()
@@ -39,7 +63,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     porPersonagem.set(p.id, { ...p, pecas: existente?.pecas ?? [] })
   }
 
-  cache = {
+  const montado: Catalogo = {
     personagens: [...porPersonagem.values()].map((personagem) => {
       // As peças que o Vital sobe entram no personagem delas; uma com o mesmo
       // id substitui a do PSD, o que permite corrigir sem deploy.
@@ -51,7 +75,10 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       return { ...personagem, pecas, enquadramento: calcularEnquadramento(pecas, personagem) }
     }),
   }
-  return cache
+  // Só guarda o que está completo: se a nuvem não respondeu, a próxima tela
+  // tenta de novo em vez de repetir o catálogo capenga a sessão inteira.
+  if (nuvemRespondeu) cache = montado
+  return montado
 }
 
 /**

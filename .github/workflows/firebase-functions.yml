@@ -41,6 +41,7 @@ jobs:
           printf '%s' "$CONTA" > "$RUNNER_TEMP/conta-functions.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/conta-functions.json"
           trap 'rm -f "$GOOGLE_APPLICATION_CREDENTIALS"' EXIT
+          node functions/check-deploy.mjs
           npx -y firebase-tools@14.23.0 deploy \
             --only functions:quintal-game \
             --project galeriadovital --non-interactive

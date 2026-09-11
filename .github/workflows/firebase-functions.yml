@@ -1,0 +1,46 @@
+name: Publicar funções do jogo
+
+on:
+  push:
+    branches: [claude/galinha-customizavel-app-7dg7w6, main]
+    paths:
+      - functions/**
+      - src/lib/corrida.ts
+      - firebase.json
+      - .github/workflows/firebase-functions.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-functions-production
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - run: npm --prefix functions ci
+      - run: npm --prefix functions test
+      - name: Publicar funções
+        env:
+          CONTA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FUNCTIONS_DISCOVERY_TIMEOUT: '60'
+        run: |
+          set -euo pipefail
+          test -n "$CONTA" || { echo 'Configure FIREBASE_SERVICE_ACCOUNT nos secrets do repositório.'; exit 1; }
+          umask 077
+          printf '%s' "$CONTA" > "$RUNNER_TEMP/conta-functions.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/conta-functions.json"
+          trap 'rm -f "$GOOGLE_APPLICATION_CREDENTIALS"' EXIT
+          npx -y firebase-tools@14.23.0 deploy \
+            --only functions:quintal-game \
+            --project galeriadovital --non-interactive

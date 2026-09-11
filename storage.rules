@@ -4,9 +4,15 @@ service firebase.storage {
     // Imagens enviadas ao Vital pelo WhatsApp: o link precisa abrir para ele,
     // mas so o dono da pasta pode escrever, e so PNG ate 8 MB.
     // Acessorios publicados pelo painel: leitura livre, escrita so do Vital.
+    function admin() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.admin == true;
+    }
+
     match /pecas/{slot}/{arquivo} {
+      allow delete: if admin();
       allow read: if true;
-      allow write: if request.auth != null
+      allow create, update: if request.auth != null
                    && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.admin == true
                    && request.resource.size < 12 * 1024 * 1024
                    && request.resource.contentType == 'image/png';
@@ -14,8 +20,9 @@ service firebase.storage {
 
     // Fotos do estudio e da galeria: leitura livre, escrita so do Vital.
     match /{pasta}/{arquivo} {
+      allow delete: if pasta in ['sobre', 'tattoos', 'produtos'] && admin();
       allow read: if pasta in ['sobre', 'tattoos', 'produtos'];
-      allow write: if pasta in ['sobre', 'tattoos', 'produtos']
+      allow create, update: if pasta in ['sobre', 'tattoos', 'produtos']
                    && request.auth != null
                    && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.admin == true
                    && request.resource.size < 12 * 1024 * 1024
@@ -23,8 +30,9 @@ service firebase.storage {
     }
 
     match /criacoes/{uid}/{arquivo} {
+      allow delete: if request.auth != null && request.auth.uid == uid;
       allow read: if true;
-      allow write: if request.auth != null
+      allow create, update: if request.auth != null
                    && request.auth.uid == uid
                    && request.resource.size < 8 * 1024 * 1024
                    && request.resource.contentType == 'image/png';

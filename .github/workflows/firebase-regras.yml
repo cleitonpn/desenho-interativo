@@ -1,4 +1,4 @@
-name: Publicar regras e índices do Firebase
+name: Publicar regras e índices do Firestore
 
 # As regras e os índices vivem no repositório, então precisam ir para o
 # Firebase sozinhos. Sem isso, uma consulta nova quebra em produção esperando
@@ -9,7 +9,7 @@ on:
     paths:
       - firestore.rules
       - firestore.indexes.json
-      - storage.rules
+      - .github/workflows/firebase-regras.yml
       - firebase.json
   workflow_dispatch:
 
@@ -28,5 +28,5 @@ jobs:
           printf '%s' "$CONTA" > "$RUNNER_TEMP/conta.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/conta.json"
           npx -y firebase-tools@latest deploy \
-            --only firestore:rules,firestore:indexes,storage \
+            --only firestore:rules,firestore:indexes \
             --project galeriadovital --non-interactive

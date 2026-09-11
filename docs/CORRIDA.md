@@ -87,3 +87,9 @@ GitHub Pages publica apenas o frontend: funções e regras continuam precisando 
 Depois de publicar, o administrador cria a campanha com suas condições comerciais reais e a ativa. Não se deve usar a campanha fictícia do emulador como benefício real.
 
 Referências de implementação: [funções callable](https://firebase.google.com/docs/functions/callable), [transações do Firestore](https://firebase.google.com/docs/firestore/manage-data/transactions).
+
+## Deploy pelo GitHub
+
+O workflow `Publicar funções do jogo` instala as dependências, testa a simulação e publica somente `functions:quintal-game` usando o secret existente `FIREBASE_SERVICE_ACCOUNT`. Executa em alterações do backend na branch de produção ou manualmente em Actions. Não usa `--force` e não publica campanhas comerciais.
+
+As regras e índices do Firestore são publicados pelo workflow separado. O Storage fica manual: copie `storage.rules` para Firebase Console > Storage > Rules e publique. A separação evita que a falta de permissão `firebasestorage.defaultBucket.get` bloqueie os outros deploys. Alterar regras não concede permissões IAM à conta do GitHub.

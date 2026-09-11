@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { silhouetteFor } from '../lib/silhueta'
 import { CORES, type CorId } from '../config/marca'
 import { caminhoDaPeca } from '../lib/catalogo'
 import { camadasEmOrdem } from '../lib/composicao'
@@ -28,6 +29,8 @@ interface Props {
    * tamanho a cada troca de peça.
    */
   ajustado?: boolean
+  /** An opaque backing for gameplay. Original tattoo artwork stays unchanged. */
+  opaco?: boolean
   /**
    * Anima as patas. Ausente — que é como o editor e as miniaturas usam — o
    * desenho sai exatamente como antes, parado e numa camada só.
@@ -47,7 +50,7 @@ interface Props {
  * guardando o offset original, o encaixe sai do próprio dado — não há nenhum
  * ajuste manual por acessório.
  */
-export function Desenho({ personagem, escolhas, cor, className = '', ajustado = false, patas }: Props) {
+export function Desenho({ personagem, escolhas, cor, className = '', ajustado = false, patas, opaco = false }: Props) {
   const camadas = useMemo(() => camadasEmOrdem(personagem, escolhas), [personagem, escolhas])
 
   const vista = useMemo<Vista>(() => {
@@ -80,15 +83,15 @@ export function Desenho({ personagem, escolhas, cor, className = '', ajustado = 
         <>
           {/* As pernas vão primeiro, e o tronco por cima: assim a emenda do
               quadril some atrás do corpo em vez de aparecer como um risco. */}
-          <Perna lado="esquerda" pernas={pernas} camadas={daPerna} vista={vista} patas={patas} />
-          <Perna lado="direita" pernas={pernas} camadas={daPerna} vista={vista} patas={patas} />
+          <Perna lado="esquerda" pernas={pernas} camadas={daPerna} vista={vista} patas={patas} opaco={opaco} />
+          <Perna lado="direita" pernas={pernas} camadas={daPerna} vista={vista} patas={patas} opaco={opaco} />
           <div className="absolute inset-0"
                style={{ clipPath: `inset(0 0 ${(1 - pernas.quadril - EMENDA) * 100}% 0)` }}>
-            {camadas.map((p) => <Camada key={p.id} peca={p} vista={vista} />)}
+            {camadas.map((p) => <Camada key={p.id} peca={p} vista={vista} opaco={opaco} />)}
           </div>
         </>
       ) : (
-        camadas.map((p) => <Camada key={p.id} peca={p} vista={vista} />)
+        camadas.map((p) => <Camada key={p.id} peca={p} vista={vista} opaco={opaco} />)
       )}
     </div>
   )
@@ -100,12 +103,13 @@ export function Desenho({ personagem, escolhas, cor, className = '', ajustado = 
  * faz meia e sapato acompanharem o passo sem nenhum arquivo novo — eles são as
  * mesmas peças, cortadas no mesmo lugar.
  */
-function Perna({ lado, pernas, camadas, vista, patas }: {
+function Perna({ lado, pernas, camadas, vista, patas, opaco }: {
   lado: 'esquerda' | 'direita'
   pernas: NonNullable<Personagem['pernas']>
   camadas: Peca[]
   vista: Vista
   patas: { andando: boolean; noAr: boolean }
+  opaco: boolean
 }) {
   const esq = lado === 'esquerda'
   // Num desenho de frente, girar a perna só a arrasta de lado — parece
@@ -127,17 +131,18 @@ function Perna({ lado, pernas, camadas, vista, patas }: {
 
   return (
     <div className="absolute inset-0" style={estilo}>
-      {camadas.map((p) => <Camada key={p.id} peca={p} vista={vista} />)}
+      {camadas.map((p) => <Camada key={p.id} peca={p} vista={vista} opaco={opaco} />)}
     </div>
   )
 }
 
-function Camada({ peca, vista }: { peca: Peca; vista: Vista }) {
+function Camada({ peca, vista, opaco = false }: { peca: Peca; vista: Vista; opaco?: boolean }) {
+  const src=caminhoDaPeca(peca),[backing,setBacking]=useState('')
+  // Only the body needs a matte. Accessory holes (hoods, glasses, straps)
+  // must keep revealing the face and the layers underneath.
+  useEffect(()=>{let active=true;setBacking('');if(opaco && peca.slot === 'base')void silhouetteFor(src).then(url=>{if(active)setBacking(url)}).catch(()=>{});return()=>{active=false}},[src,opaco,peca.slot])
   return (
-    <img
-      src={caminhoDaPeca(peca)}
-      alt={peca.rotulo ?? ''}
-      draggable={false}
+    <span
       className="absolute select-none"
       style={{
         // Altura em % também, e não automática. Com a altura vindo da
@@ -151,6 +156,9 @@ function Camada({ peca, vista }: { peca: Peca; vista: Vista }) {
         width: `${(peca.w / vista.w) * 100}%`,
         height: `${(peca.h / vista.h) * 100}%`,
       }}
-    />
+    >
+      {backing&&<img src={backing} alt="" aria-hidden draggable={false} className="absolute inset-0 w-full h-full" />}
+      <img src={src} alt={peca.rotulo ?? ''} draggable={false} className="absolute inset-0 w-full h-full" />
+    </span>
   )
 }

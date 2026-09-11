@@ -16,22 +16,26 @@ import { NovoPersonagem } from '../../components/NovoPersonagem'
 import { AbaGente } from './AbaGente'
 import { AbaEstudio } from './AbaEstudio'
 import { AbaLoja } from './AbaLoja'
+import { AbaJogo } from './AbaJogo'
+import { useAuth } from '../../contexts/AuthContext'
 import { CORES } from '../../config/marca'
 import type { Catalogo, Criacao, Peca, Perfil, SlotId } from '../../lib/tipos'
 
-type Aba = 'gente' | 'loja' | 'estudio' | 'mailing' | 'criacoes' | 'pecas'
+type Aba = 'gente' | 'loja' | 'estudio' | 'mailing' | 'criacoes' | 'pecas' | 'jogo'
 
 /**
  * Painel do Vital. Três coisas que ele precisa ver sozinho: quem se cadastrou
  * (o mailing), o que a galera anda montando e quais peças estão no ar.
  */
 export function Admin() {
+  const { perfil } = useAuth()
   const [aba, setAba] = useState<Aba>('gente')
   const [perfis, setPerfis] = useState<Perfil[] | null>(null)
   const [criacoes, setCriacoes] = useState<Criacao[] | null>(null)
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
 
   useEffect(() => {
+    if (!perfil?.admin) return
     carregarCatalogo().then(setCatalogo).catch(() => {})
     getDocs(query(collection(db, 'usuarios'), orderBy('criadoEm', 'desc')))
       .then((s) => setPerfis(s.docs.map((d) => ({ uid: d.id, ...d.data() } as Perfil))))
@@ -39,7 +43,9 @@ export function Admin() {
     getDocs(query(collection(db, 'criacoes'), orderBy('criadoEm', 'desc')))
       .then((s) => setCriacoes(s.docs.map((d) => ({ id: d.id, ...d.data() } as unknown as Criacao))))
       .catch(() => setCriacoes([]))
-  }, [])
+  }, [perfil?.admin])
+
+  if (!perfil?.admin) return <div className="p-8"><h1 className="font-display text-2xl">Acesso restrito</h1><p>Este painel é exclusivo de administradores.</p><Link to="/">Voltar ao início</Link></div>
 
   return (
     <div className="min-h-dvh px-5 py-6 safe-top safe-bottom max-w-5xl mx-auto">
@@ -49,7 +55,7 @@ export function Admin() {
       <h1 className="font-display text-3xl mt-5">Painel do Vital</h1>
 
       <div className="flex gap-2 mt-5 mb-6 overflow-x-auto">
-        {([['gente', 'A galera'], ['loja', 'Loja'], ['estudio', 'Estúdio'],
+        {([['gente', 'A galera'], ['jogo', 'Jogo & benefícios'], ['loja', 'Loja'], ['estudio', 'Estúdio'],
            ['mailing', 'Mailing'], ['criacoes', 'Criações'],
            ['pecas', 'Peças']] as const).map(([id, rotulo]) => (
           <button key={id} onClick={() => setAba(id)}
@@ -61,6 +67,7 @@ export function Admin() {
       </div>
 
       {aba === 'gente' && <AbaGente catalogo={catalogo} />}
+      {aba === 'jogo' && <AbaJogo />}
       {aba === 'loja' && <AbaLoja />}
       {aba === 'estudio' && <AbaEstudio />}
       {aba === 'mailing' && <AbaMailing perfis={perfis} />}

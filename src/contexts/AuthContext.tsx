@@ -50,16 +50,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    return onAuthStateChanged(auth, async (u) => {
+    let revision = 0
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      const current = ++revision
+      setCarregando(true)
       setUsuario(u)
-      if (u) {
-        const snap = await getDoc(doc(db, 'usuarios', u.uid))
-        setPerfil(snap.exists() ? ({ uid: u.uid, ...snap.data() } as Perfil) : null)
-      } else {
-        setPerfil(null)
+      setPerfil(null)
+      try {
+        if (u) {
+          const snap = await getDoc(doc(db, 'usuarios', u.uid))
+          if (current === revision) setPerfil(snap.exists() ? ({ uid: u.uid, ...snap.data() } as Perfil) : null)
+        }
+      } catch {
+        if (current === revision) setPerfil(null)
+      } finally {
+        if (current === revision) setCarregando(false)
       }
-      setCarregando(false)
     })
+    return () => { revision++; unsubscribe() }
   }, [])
 
   async function gravarPerfil(u: User, dados: DadosCadastro) {

@@ -13,12 +13,20 @@ service cloud.firestore {
     // Dados pessoais do mailing: so a propria pessoa e o Vital enxergam.
     match /usuarios/{uid} {
       allow read: if dono(uid) || ehAdmin();
-      allow create: if dono(uid);
+      allow create: if dono(uid) && !('admin' in request.resource.data);
       // O proprio usuario nunca pode se promover a admin.
       allow update: if (dono(uid) && !('admin' in request.resource.data.diff(resource.data).affectedKeys()))
                     || ehAdmin();
       allow delete: if ehAdmin();
     }
+
+    // Coupons and scores are issued exclusively by the authoritative server.
+    match /gameRewards/{id} { allow read: if ehAdmin(); allow write: if false; }
+    match /gameCoupons/{id} { allow read: if dono(resource.data.uid) || ehAdmin(); allow write: if false; }
+    match /gameRuns/{id} { allow read, write: if false; }
+    match /gamePlayers/{uid} { allow read, write: if false; }
+    match /gamePlayers/{uid}/{document=**} { allow read, write: if false; }
+    match /gameWeeks/{week}/scores/{uid} { allow read: if true; allow write: if false; }
 
     // Acessorios que o Vital sobe pelo painel. Todo mundo precisa ler para
     // montar a galinha; so o Vital escreve.

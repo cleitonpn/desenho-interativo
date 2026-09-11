@@ -1,629 +1,1275 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronLeft, ChevronRight, ChevronUp, Loader2, Play, RotateCcw } from 'lucide-react'
-import { Desenho } from '../components/Desenho'
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  caminhoDaPeca, carregarCatalogo, personagemPadrao, personagensVisiveis,
-} from '../lib/catalogo'
+  ArrowLeft,
+  Pause,
+  Play,
+  Volume2,
+  VolumeX,
+  Trophy,
+  Gift,
+  RotateCcw,
+  Share2,
+  X,
+} from "lucide-react";
+import { Desenho } from "../components/Desenho";
+import { CenarioCorrida } from "../components/CenarioCorrida";
 import {
-  comecar, guardarPartida, MUNDO, passo, pecasJogaveis,
-  type Caixa, type Comando, type Estado, type Item, type Minhoca, type Poca,
-} from '../lib/jogo'
-import { useAuth } from '../contexts/AuthContext'
-import { registrarDescoberta } from '../lib/progresso'
-import type { Catalogo, Escolhas, Peca, Personagem } from '../lib/tipos'
+  carregarCatalogo,
+  personagemPadrao,
+  personagensVisiveis,
+  caminhoDaPeca,
+} from "../lib/catalogo";
+import {
+  createRun,
+  stepRun,
+  missions,
+  VERSION,
+  type Run,
+  type Input,
+  type Thing,
+} from "../lib/corrida";
+import {
+  journal,
+  saveJournal,
+  dailySeed,
+  dayKey,
+  weekKey,
+  ACHIEVEMENTS,
+  type Journal,
+} from "../lib/corridaProgresso";
+import {
+  beginRun,
+  finishRun,
+  myCoupons,
+  couponLink,
+  leaderboard,
+  type Coupon,
+  type Session,
+} from "../lib/recompensas";
+import { guardarPartida, pecasJogaveis } from "../lib/jogo";
+import { registrarDescoberta } from "../lib/progresso";
+import { useAuth } from "../contexts/AuthContext";
+import { MARCA } from "../config/marca";
+import {
+  DEFAULT_EVENT,
+  loadEvent,
+  eventActive,
+  type GameEvent,
+} from "../lib/eventoJogo";
+import { resultCard, shareCard } from "../lib/compartilharCorrida";
+import type { Catalogo, Escolhas } from "../lib/tipos";
+import "./jogo.css";
 
-/**
- * O corpo não encosta na borda do enquadramento — sobram ~15% embaixo, onde
- * entram sapatos e meias. Afundar o quadro nessa proporção põe o pé no chão em
- * vez de deixar a galinha flutuando.
- */
-const AFUNDA = 0.12
-
-/**
- * Proporção da janela de jogo.
- *
- * Num celular em pé a largura é sempre o limite, então a proporção decide a
- * altura — e com ela o zoom. Mais larga mostra mais caminho à frente; mais
- * quadrada deixa a galinha maior. 1.15 mostra ~8.3 unidades de largura, ou
- * seja uns 5.4 à frente da galinha: sobra quase um segundo para ver a caixa
- * chegando, que é mais do que o pulo precisa.
- */
-const FORMATO = 1.15
-
-type Fase = 'abertura' | 'jogando' | 'fim'
-
+type Phase = "intro" | "countdown" | "playing" | "paused" | "end";
+const EMPTY = createRun(1),
+  STAGES = ["O quintal", "Pelas ruas", "Ateliê do Vital"];
 export function Jogo() {
-  const navegar = useNavigate()
-  const { usuario } = useAuth()
-  const [catalogo, setCatalogo] = useState<Catalogo | null>(null)
-  const [personagemId, setPersonagemId] = useState<string | null>(null)
-  const [fase, setFase] = useState<Fase>('abertura')
-
-  // O que muda pouco mora no React; o que muda 60 vezes por segundo mora em
-  // ref e é escrito direto no style. Misturar os dois é o que faz jogo em
-  // HTML engasgar.
-  const estadoRef = useRef<Estado | null>(null)
-  const comandoRef = useRef<Comando>({ esquerda: false, direita: false, pular: false })
-  const nosRef = useRef(new Map<string, HTMLElement>())
-  const relogioRef = useRef<HTMLSpanElement | null>(null)
-  const bichoRef = useRef<HTMLDivElement | null>(null)
-  const sombraRef = useRef<HTMLDivElement | null>(null)
-  const ceuRef = useRef<HTMLDivElement | null>(null)
-  const chaoRef = useRef<HTMLDivElement | null>(null)
-  const chaveRef = useRef('')
-  const jaBaixadas = useRef(new Set<string>())
-
-  // Ref de callback, e não useRef: a janela de jogo só entra no DOM depois que
-  // o catálogo chega, e um efeito preso a useRef seria executado antes disso —
-  // mediria null, desistiria, e nunca mais rodaria.
-  const [vista, setVista] = useState<HTMLDivElement | null>(null)
-  const [medidas, setMedidas] = useState({ escala: 0, larguraVista: 13.3 })
-  const [cena, setCena] = useState<{ caixas: Caixa[]; itens: Item[]; minhocas: Minhoca[]; pocas: Poca[] }>(
-    { caixas: [], itens: [], minhocas: [], pocas: [] })
-  const [pontos, setPontos] = useState(0)
-  // Dois booleanos, e não a fase do passo: o ciclo da perna é periódico e vive
-  // no CSS, então o React só refaz o desenho quando ela começa ou para.
-  const [patas, setPatas] = useState({ andando: false, noAr: false })
-  const [vestido, setVestido] = useState<Escolhas>({})
-  const [resgatadas, setResgatadas] = useState<string[]>([])
-  const [aviso, setAviso] = useState<{ texto: string; tom: 'bom' | 'neutro' | 'ruim' } | null>(null)
-
+  const { usuario } = useAuth(),
+    navigate = useNavigate();
+  const [catalog, setCatalog] = useState<Catalogo | null>(null),
+    [personId, setPersonId] = useState("");
+  const [error, setError] = useState(""),
+    [phase, setPhase] = useState<Phase>("intro"),
+    [count, setCount] = useState(3);
+  const [event, setEvent] = useState<GameEvent>(DEFAULT_EVENT),
+    [card, setCard] = useState<File | null>(null);
+  const [run, setRun] = useState<Run>(EMPTY),
+    [progress, setProgress] = useState<Journal>(journal);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]),
+    [busy, setBusy] = useState(false);
+  const [sound, setSound] = useState(false),
+    [panel, setPanel] = useState<"collection" | "coupons" | "ranking" | null>(
+      null,
+    );
+  const [coupons, setCoupons] = useState<Coupon[]>([]),
+    [ranking, setRanking] = useState<{ alias: string; score: number }[]>([]);
+  const [rewardStatus, setRewardStatus] = useState(""),
+    [daily, setDaily] = useState(false),
+    [width, setWidth] = useState(960);
+  const viewRef = useRef<HTMLDivElement>(null),
+    live = useRef<Run>(EMPTY),
+    held = useRef(false),
+    tap = useRef(false);
+  const inputs = useRef<Input[]>([]),
+    session = useRef<Session | null>(null),
+    audio = useRef<AudioContext | null>(null);
+  const soundRef = useRef(false),
+    lastTone = useRef(0),
+    [pending, setPending] = useState(false);
   useEffect(() => {
     carregarCatalogo()
-      .then((c) => { setCatalogo(c); setPersonagemId(personagemPadrao(c).id) })
-      .catch(() => {})
-  }, [])
-
-  const personagem = useMemo(
-    () => (catalogo ? (catalogo.personagens.find((p) => p.id === personagemId)
-      ?? personagemPadrao(catalogo)) : null),
-    [catalogo, personagemId])
-
-  const acervo = useMemo(() => (personagem ? pecasJogaveis(personagem) : []), [personagem])
-  const porId = useMemo(() => new Map(acervo.map((p) => [p.id, p])), [acervo])
-
-  /** A escala sai da altura da janela de jogo: a física é sempre a mesma, em
-   *  unidades, e só a conversão para pixel muda de aparelho para aparelho. */
+      .then((c) => {
+        setCatalog(c);
+        setPersonId(personagemPadrao(c).id);
+      })
+      .catch(() =>
+        setError("Não foi possível carregar os desenhos. Recarregue a página."),
+      );
+  }, []);
   useEffect(() => {
-    if (!vista) return
-    const medir = () => {
-      const r = vista.getBoundingClientRect()
-      if (!r.height) return
-      const escala = r.height / MUNDO.altura
-      const larguraVista = r.width / escala
-      setMedidas({ escala, larguraVista })
-      // A partida em andamento aprende a nova largura na hora: girar o aparelho
-      // no meio do jogo não pode deixar de gerar caixas adiante.
-      if (estadoRef.current) estadoRef.current.larguraVista = larguraVista
-    }
-    medir()
-    const obs = new ResizeObserver(medir)
-    obs.observe(vista)
-    return () => obs.disconnect()
-  }, [vista])
-
-  function jogar() {
-    if (!personagem) return
-    estadoRef.current = comecar(personagem, medidas.larguraVista)
-    chaveRef.current = ''
-    jaBaixadas.current.clear()
-    setCena({ caixas: [], itens: [], minhocas: [], pocas: [] })
-    setVestido({})
-    setResgatadas([])
-    setPontos(0)
-    setAviso(null)
-    setFase('jogando')
-  }
-
-  /** Posiciona tudo. Uma escrita de transform por elemento, por quadro. */
-  const desenhar = useCallback((e: Estado) => {
-    const { escala } = medidas
-    if (!escala) return
-    const nos = nosRef.current
-    const b = e.bicho
-
-    if (ceuRef.current) ceuRef.current.style.backgroundPositionX = `${-e.camera * escala * 0.35}px`
-    if (chaoRef.current) chaoRef.current.style.backgroundPositionX = `${-e.camera * escala}px`
-
-    const alturaBicho = MUNDO.alturaBicho * escala
-    if (bichoRef.current) {
-      const andando = comandoRef.current.esquerda || comandoRef.current.direita
-      // Squash and stretch: estica subindo, achata caindo. Dá peso ao salto.
-      const estica = b.noChao ? 0 : Math.max(-0.13, Math.min(0.13, b.vy * 0.012))
-      // O corpo sobe e desce no ritmo do passo. O balanço de lado que havia
-      // antes saiu: quem anda são as patas, e o corpo jogando de um lado para
-      // o outro parecia que a galinha escorregava, não que caminhava.
-      const saltito = b.noChao && andando ? Math.abs(Math.sin(b.passo * Math.PI * 2)) * 0.045 : 0
-      bichoRef.current.style.transform =
-        `translate3d(${(b.x - e.camera) * escala - (alturaBicho * 0.7275) / 2}px,` +
-        `${-(b.y + saltito) * escala + alturaBicho * AFUNDA}px, 0)` +
-        ` scale(${1 - estica}, ${1 + estica})`
-      // Pisca depois da poça, para ficar claro que o susto já passou.
-      bichoRef.current.style.opacity =
-        e.piscando > 0 && Math.floor(e.piscando * 12) % 2 === 0 ? '0.35' : '1'
-    }
-    if (sombraRef.current) {
-      // A sombra fica no chão e encolhe com a altura: sem ela não dá para saber
-      // onde a galinha vai cair.
-      const alto = Math.min(b.y / 3, 1)
-      sombraRef.current.style.transform =
-        `translate3d(${(b.x - e.camera) * escala - alturaBicho * 0.28}px, 0, 0)` +
-        ` scale(${1 - alto * 0.45})`
-      sombraRef.current.style.opacity = `${0.28 - alto * 0.18}`
-    }
-
-    const largCaixa = MUNDO.caixa.largura * escala
-    for (const c of e.caixas) {
-      const no = nos.get(`c${c.id}`)
-      if (!no) continue
-      no.style.transform =
-        `translate3d(${(c.x - e.camera) * escala - largCaixa / 2}px,` +
-        `${-MUNDO.caixa.base * escala}px, 0)`
-    }
-
-    const largMinhoca = MUNDO.minhoca.largura * escala
-    for (const m of e.minhocas) {
-      const no = nos.get(`m${m.id}`)
-      if (no) no.style.transform = `translate3d(${(m.x - e.camera) * escala - largMinhoca / 2}px, 0, 0)`
-    }
-    const largPoca = MUNDO.poca.largura * escala
-    for (const p of e.pocas) {
-      const no = nos.get(`p${p.id}`)
-      if (no) no.style.transform = `translate3d(${(p.x - e.camera) * escala - largPoca / 2}px, 0, 0)`
-    }
-
-    const largItem = MUNDO.itemTamanho * escala
-    for (const i of e.itens) {
-      const no = nos.get(`i${i.id}`)
-      if (!no) continue
-      no.style.transform =
-        `translate3d(${(i.x - e.camera) * escala - largItem / 2}px, ${-i.y * escala}px, 0)`
-    }
-
-    if (relogioRef.current) relogioRef.current.textContent = `${Math.ceil(e.tempo)}s`
-  }, [medidas])
-
-  /** O laço. Roda só enquanto a partida está de pé. */
+    soundRef.current = sound;
+  }, [sound]);
   useEffect(() => {
-    if (fase !== 'jogando') return
-    let quadro = 0
-    let anterior = performance.now()
-
-    const rodar = (agora: number) => {
-      quadro = requestAnimationFrame(rodar)
-      const dt = (agora - anterior) / 1000
-      anterior = agora
-      const e = estadoRef.current
-      // Aba escondida: o relógio não deve correr sem ninguém jogando.
-      if (!e || document.hidden) return
-
-      const eventos = passo(e, dt, comandoRef.current)
-      desenhar(e)
-
-      // Só dois booleanos chegam ao React, e só quando mudam de verdade.
-      const andando = comandoRef.current.esquerda || comandoRef.current.direita
-      setPatas((antes) => (antes.andando === andando && antes.noAr === !e.bicho.noChao
-        ? antes : { andando, noAr: !e.bicho.noChao }))
-
-      for (const ev of eventos) {
-        if (ev.tipo === 'fim') {
-          setVestido({ ...e.vestido })
-          setFase('fim')
-          if (usuario && e.resgatadas.length) {
-            void registrarDescoberta(usuario.uid, e.resgatadas, personagem?.id)
-          }
-        }
-        if (ev.tipo === 'pegou') {
-          setVestido({ ...e.vestido })
-          setResgatadas([...e.resgatadas])
-          setPontos(e.pontos)
-          setAviso({ texto: ev.peca.rotulo ?? ev.peca.id, tom: ev.inedita ? 'bom' : 'neutro' })
-        }
-        if (ev.tipo === 'pisou') {
-          setPontos(e.pontos)
-          setAviso({ texto: `+${ev.pontos}`, tom: 'bom' })
-        }
-        if (ev.tipo === 'sujou') {
-          setVestido({ ...e.vestido })
-          setResgatadas([...e.resgatadas])
-          setPontos(e.pontos)
-          setAviso({
-            texto: ev.peca ? `Caiu: ${ev.peca.rotulo ?? ev.peca.id}` : 'Tinta! −3s',
-            tom: 'ruim',
-          })
-        }
+    setCoupons([]);
+    setPending(false);
+  }, [usuario?.uid]);
+  useEffect(() => {
+    if (!panel) return;
+    const prior = document.activeElement as HTMLElement | null;
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setPanel(null);
+        return;
       }
-
-      // A lista só volta ao React quando muda de verdade — nascer uma caixa,
-      // abrir, sair de cena. O resto do quadro é só transform.
-      const chave = e.caixas.map((c) => `${c.id}${c.aberta ? 'a' : ''}`).join() +
-        '|' + e.itens.map((i) => `${i.id}${i.pousado ? 'p' : ''}`).join() +
-        '|' + e.minhocas.map((m) => m.id).join() + '|' + e.pocas.map((p) => p.id).join()
-      if (chave !== chaveRef.current) {
-        chaveRef.current = chave
-        setCena({
-          caixas: [...e.caixas], itens: [...e.itens],
-          minhocas: [...e.minhocas], pocas: [...e.pocas],
-        })
-        // Baixa só o que está prestes a aparecer. O editor já aprendeu essa:
-        // carregar as 99 peças de uma vez custa 3,7 MB e não serve para nada.
-        for (const c of e.caixas) {
-          if (jaBaixadas.current.has(c.pecaId)) continue
-          const peca = porId.get(c.pecaId)
-          if (!peca) continue
-          jaBaixadas.current.add(c.pecaId)
-          new Image().src = caminhoDaPeca(peca)
-        }
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          ".run-modal button:not(:disabled), .run-modal a[href], .run-modal input, .run-modal select",
+        ),
+      );
+      const first = nodes[0],
+        last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
       }
-    }
-
-    quadro = requestAnimationFrame(rodar)
-    return () => cancelAnimationFrame(quadro)
-  }, [fase, desenhar, personagem, porId, usuario])
-
-  /** O aviso do acessório some sozinho. */
-  useEffect(() => {
-    if (!aviso) return
-    const t = setTimeout(() => setAviso(null), 1400)
-    return () => clearTimeout(t)
-  }, [aviso])
-
-  /** Teclado, para quem estiver no computador. */
-  useEffect(() => {
-    if (fase !== 'jogando') return
-    const mapa: Record<string, keyof Comando> = {
-      ArrowLeft: 'esquerda', a: 'esquerda', A: 'esquerda',
-      ArrowRight: 'direita', d: 'direita', D: 'direita',
-      ArrowUp: 'pular', w: 'pular', W: 'pular', ' ': 'pular',
-    }
-    const tecla = (ligado: boolean) => (ev: KeyboardEvent) => {
-      const acao = mapa[ev.key]
-      if (!acao) return
-      ev.preventDefault()
-      // Segurar a tecla dispara repetição do sistema; para o pulo isso viraria
-      // uma metralhadora. Só a primeira descida conta.
-      if (acao === 'pular' && (ev.repeat || !ligado)) return
-      comandoRef.current[acao] = ligado
-    }
-    const desce = tecla(true)
-    const sobe = tecla(false)
-    window.addEventListener('keydown', desce)
-    window.addEventListener('keyup', sobe)
+    };
+    document.addEventListener("keydown", key);
     return () => {
-      window.removeEventListener('keydown', desce)
-      window.removeEventListener('keyup', sobe)
+      document.removeEventListener("keydown", key);
+      prior?.focus();
+    };
+  }, [panel]);
+  useEffect(() => {
+    loadEvent()
+      .then((e) => {
+        if (eventActive(e)) setEvent(e);
+      })
+      .catch(() => {
+        /* Standard scenery remains available offline. */
+      });
+  }, []);
+  useEffect(
+    () => () => {
+      void audio.current?.close();
+    },
+    [],
+  );
+  useEffect(() => {
+    const el = viewRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() =>
+      setWidth(
+        Math.max(560, Math.min(1250, (el.clientWidth / el.clientHeight) * 650)),
+      ),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [catalog]);
+  const character = useMemo(
+    () =>
+      catalog?.personagens.find((p) => p.id === personId) ??
+      (catalog ? personagemPadrao(catalog) : null),
+    [catalog, personId],
+  );
+  const allPieces = useMemo(
+    () => (character ? pecasJogaveis(character) : []),
+    [character],
+  );
+  const pieces = useMemo(() => {
+    const featured = allPieces.filter((p) => event.pieces.includes(p.id));
+    return featured.length ? featured : allPieces;
+  }, [allPieces, event]);
+  const collected = useMemo(
+    () =>
+      run.items
+        .map((id) => pieces[id % pieces.length])
+        .filter(Boolean),
+    [run.items.length, pieces],
+  );
+  const clothes = useMemo(
+    () => Object.fromEntries(collected.map((p) => [p.slot, p.id])) as Escolhas,
+    [collected],
+  );
+  useEffect(() => {
+    setCard(null);
+    let active = true;
+    if (phase === "end" && character)
+      void resultCard(character, clothes, run.score)
+        .then((f) => {
+          if (active) setCard(f);
+        })
+        .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [phase, character, clothes, run.score]);
+  const tone = useCallback((frequency: number) => {
+    const ctx = audio.current;
+    if (!soundRef.current || !ctx || ctx.state !== "running") return;
+    const osc = ctx.createOscillator(),
+      gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(
+      frequency * 1.4,
+      ctx.currentTime + 0.08,
+    );
+    gain.gain.setValueAtTime(0.035, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
+  }, []);
+  function unlockAudio() {
+    if (sound) {
+      audio.current ??= new AudioContext();
+      void audio.current.resume();
     }
-  }, [fase])
-
-  const registrar = useCallback((chave: string) => (no: HTMLElement | null) => {
-    if (no) nosRef.current.set(chave, no)
-    else nosRef.current.delete(chave)
-  }, [])
-
-  if (!catalogo || !personagem) {
-    return <div className="min-h-dvh grid place-items-center text-muted"><Loader2 className="animate-spin" /></div>
   }
-
-  const { escala } = medidas
-  const chaoPx = MUNDO.chao * escala
-  const alturaBicho = MUNDO.alturaBicho * escala
-
+  async function sendResult() {
+    if (!session.current) return;
+    setBusy(true);
+    setRewardStatus("Conferindo sua corrida…");
+    try {
+      const result = await finishRun(session.current.id, inputs.current);
+      setCoupons((old) => [
+        ...result.coupons,
+        ...old.filter((c) => !result.coupons.some((n) => n.code === c.code)),
+      ]);
+      setRewardStatus(
+        result.coupons.length
+          ? "Seu benefício está na carteira!"
+          : "Corrida validada. Nenhum cupom nesta vez; confira as próximas campanhas.",
+      );
+      setPending(false);
+      try {
+        localStorage.removeItem(`quintal:pending:${usuario?.uid}`);
+      } catch {
+        /* storage unavailable */
+      }
+    } catch (err) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        [
+          "functions/failed-precondition",
+          "functions/permission-denied",
+        ].includes(String(err.code))
+      ) {
+        setPending(false);
+        setRewardStatus(
+          "Esta partida não pode mais ser validada. Inicie uma nova corrida premiada.",
+        );
+        try {
+          localStorage.removeItem(`quintal:pending:${usuario?.uid}`);
+        } catch {
+          /* Storage unavailable. */
+        }
+        return;
+      }
+      setPending(true);
+      setRewardStatus(
+        "Não conseguimos validar agora. Sua partida foi guardada para tentar novamente.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  const finishRef = useRef<() => void>(() => {});
+  finishRef.current = () => {
+    const r = live.current,
+      itemIds = r.items
+        .map((id) => pieces[id % pieces.length]?.id)
+        .filter(Boolean);
+    const saved = saveJournal(r, itemIds, daily);
+    setProgress(saved.journal);
+    setNewAchievements(saved.newAchievements);
+    if (usuario && character)
+      void registrarDescoberta(usuario.uid, itemIds, character.id);
+    setPhase("end");
+    held.current = false;
+    if (session.current) {
+      try {
+        localStorage.setItem(
+          `quintal:pending:${usuario?.uid}`,
+          JSON.stringify({ session: session.current, inputs: inputs.current }),
+        );
+      } catch {
+        /* Keep in memory. */
+      }
+      void sendResult();
+    }
+  };
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    if (count === 0) {
+      setPhase("playing");
+      return;
+    }
+    const timer = setTimeout(() => setCount((v) => v - 1), 850);
+    return () => clearTimeout(timer);
+  }, [phase, count]);
+  useEffect(() => {
+    if (phase !== "playing") return;
+    let frame = 0,
+      previous = performance.now(),
+      bank = 0,
+      lastPaint = 0;
+    function loop(now: number) {
+      bank += Math.min((now - previous) / 1000, 0.1);
+      previous = now;
+      while (bank >= 1 / 60 && live.current.tick < live.current.end) {
+        const r = live.current;
+        const desired = held.current || tap.current;
+        if (r.held !== desired)
+          inputs.current.push({ tick: r.tick, held: desired });
+        stepRun(r, desired);
+        tap.current = false;
+        bank -= 1 / 60;
+      }
+      if (live.current.noticeUntil !== lastTone.current) {
+        lastTone.current = live.current.noticeUntil;
+        tone(live.current.notice.includes("Tinta") ? 140 : 600);
+      }
+      if (now - lastPaint > 30) {
+        setRun({ ...live.current });
+        lastPaint = now;
+      }
+      if (live.current.tick >= live.current.end) {
+        setRun({ ...live.current });
+        finishRef.current();
+        return;
+      }
+      frame = requestAnimationFrame(loop);
+    }
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, [phase, tone]);
+  useEffect(() => {
+    const cancel = () => {
+      held.current = false;
+      tap.current = false;
+      setPhase((p) => (p === "playing" || p === "countdown" ? "paused" : p));
+    };
+    const visibility = () => {
+      if (document.hidden) cancel();
+    };
+    const down = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.matches("input,textarea,select")) return;
+      if ([" ", "ArrowUp", "w", "W"].includes(e.key) && phase === "playing") {
+        e.preventDefault();
+        if (!e.repeat) tap.current = true;
+        held.current = true;
+      }
+      if (e.key === "Escape" && phase === "playing") cancel();
+    };
+    const up = (e: KeyboardEvent) => {
+      if ([" ", "ArrowUp", "w", "W"].includes(e.key)) held.current = false;
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", cancel);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", cancel);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [phase]);
+  async function start(mode: "free" | "daily" | "reward") {
+    if (busy) return;
+    unlockAudio();
+    setError("");
+    setBusy(true);
+    session.current = null;
+    setRewardStatus("");
+    setPending(false);
+    try {
+      let seed =
+        mode === "daily"
+          ? dailySeed()
+          : crypto.getRandomValues(new Uint32Array(1))[0];
+      if (mode === "reward") {
+        if (!usuario) {
+          navigate("/entrar", { state: { destino: "/jogo" } });
+          return;
+        }
+        session.current = await beginRun();
+        if (session.current.version !== VERSION)
+          throw Error("Atualize a página para jogar.");
+        seed = session.current.seed;
+      }
+      setDaily(mode === "daily");
+      const next = createRun(seed);
+      if (mode === "daily")
+        next.notice = "Missão de hoje: " + missions(next)[dailySeed() % 4].name;
+      live.current = next;
+      setRun({ ...next });
+      inputs.current = [];
+      held.current = false;
+      tap.current = false;
+      setNewAchievements([]);
+      setCount(3);
+      setPhase("countdown");
+    } catch {
+      setError(
+        "A corrida premiada está indisponível agora. Você pode jogar livremente e tentar mais tarde.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function openPanel(value: "collection" | "coupons" | "ranking") {
+    setPanel(value);
+    setError("");
+    if (value === "coupons" && usuario) {
+      setBusy(true);
+      try {
+        setCoupons(await myCoupons(usuario.uid));
+        const raw = localStorage.getItem(`quintal:pending:${usuario.uid}`);
+        if (raw) {
+          const p = JSON.parse(raw);
+          session.current = p.session;
+          inputs.current = p.inputs;
+          setPending(true);
+        }
+      } catch {
+        setError("Não foi possível carregar os cupons. Tente novamente.");
+      } finally {
+        setBusy(false);
+      }
+    }
+    if (value === "ranking") {
+      setBusy(true);
+      try {
+        setRanking(await leaderboard(weekKey()));
+      } catch {
+        setError("Ranking indisponível no momento.");
+      } finally {
+        setBusy(false);
+      }
+    }
+  }
+  function edit() {
+    if (!character) return;
+    guardarPartida(character.id, clothes);
+    navigate("/montar", {
+      state: { escolhas: clothes, personagem: character.id },
+    });
+  }
+  const naturalStage = Math.min(2, Math.floor(run.tick / 1200)),
+    stage =
+      event.scenery === "auto"
+        ? naturalStage
+        : ["quintal", "rua", "atelie"].indexOf(event.scenery),
+    camera = run.x - 3.4,
+    px = (x: number) => (x - camera) * 55,
+    running = phase === "playing";
+  if (!catalog || !character)
+    return (
+      <div className="run-loading">
+        {error || "Preparando o quintal…"}
+        {error && (
+          <button onClick={() => location.reload()}>Tentar novamente</button>
+        )}
+      </div>
+    );
   return (
-    /*
-     * Mesma disciplina do editor: uma coluna, fluxo normal, flex-wrap em toda
-     * linha de botões. O único lugar com posição absoluta é DENTRO da janela de
-     * jogo, que tem overflow escondido — nada ali pode escapar por cima do
-     * resto da tela.
-     */
-    <div className="min-h-dvh flex flex-col select-none">
-      <header data-cabecalho className="safe-top px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-2">
-        <Link to="/" className="botao-neutro !px-3 !py-2" aria-label="Voltar ao início">
-          <ArrowLeft size={18} />
+    <div className="run-page">
+      <header className="run-top">
+        <Link to="/" aria-label="Voltar ao início">
+          <ArrowLeft size={19} />
         </Link>
-        <div className="flex items-center gap-3 flex-wrap justify-end">
-          <span className="font-display text-xl tabular-nums leading-none">
-            {pontos}<span className="etiqueta ml-1">pts</span>
-          </span>
-          <span className="font-display text-base tabular-nums leading-none text-muted">
-            {resgatadas.length}<span className="text-faint text-xs">/{acervo.length}</span>
-          </span>
-          <span ref={relogioRef}
-                className="font-display text-xl tabular-nums leading-none text-brand w-12 text-right">
-            {MUNDO.duracao}s
-          </span>
-        </div>
+        <span>
+          QUINTAL <i>/</i> NA CORRIDA
+        </span>
+        <button
+          aria-label={sound ? "Desligar som" : "Ligar som"}
+          onClick={() => {
+            if (!sound) {
+              audio.current ??= new AudioContext();
+              void audio.current.resume();
+            }
+            setSound((v) => !v);
+          }}
+        >
+          {sound ? <Volume2 size={19} /> : <VolumeX size={19} />}
+        </button>
       </header>
-
-      <main className="px-3 flex justify-center">
-        {/* Uma conta só para a largura, como no editor: a altura fica limitada
-            sem depender de o navegador apertar nada. */}
-        <div ref={setVista} data-vista
-             className="relative overflow-hidden rounded-2xl border-[2.5px] border-ink bg-canvas"
-             style={{ width: `min(100%, calc(48dvh * ${FORMATO}))`, aspectRatio: `${FORMATO}` }}>
-          <div ref={ceuRef} className="absolute inset-0 papel" />
-
-          <div className="absolute left-0 right-0 bottom-0 border-t-[3px] border-ink bg-raised"
-               style={{ height: chaoPx || 0 }}>
-            <div ref={chaoRef} className="absolute inset-0 opacity-70" style={{
-              backgroundImage:
-                'repeating-linear-gradient(-45deg, rgb(var(--c-ink)/.16) 0 2px, transparent 2px 11px)',
-            }} />
+      <div className="run-layout">
+        <div className="run-view" ref={viewRef}>
+          <svg
+            className="run-scene"
+            viewBox={`0 0 ${width} 650`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <CenarioCorrida camera={camera} stage={stage} width={width} />
+            {run.things
+              .filter(
+                (o) => !o.taken && px(o.x) > -150 && px(o.x) < width + 150,
+              )
+              .map((o) => (
+                <ObjectDrawing key={o.id} thing={o} x={px(o.x)}
+                  accessory={o.kind === "accessory" && pieces.length ? caminhoDaPeca(pieces[o.sourceId! % pieces.length]) : undefined} />
+              ))}
+            {run.effects.map((p, i) => (
+              <g
+                key={`${p.until}-${i}`}
+                transform={`translate(${px(p.x)},${532 - p.y * 55})`}
+                stroke="#ed3525"
+                strokeWidth="2"
+                opacity={(p.until - run.tick) / 24}
+              >
+                {[0, 1, 2, 3, 4, 5].map((n) => (
+                  <path
+                    key={n}
+                    transform={`rotate(${n * 60})`}
+                    d={`M0 ${36 - p.until + run.tick}v8`}
+                  />
+                ))}
+              </g>
+            ))}
+            <ellipse
+              cx={px(run.x)}
+              cy="534"
+              rx={31 - Math.min(run.y * 4, 15)}
+              ry="5"
+              fill="#423b32"
+              opacity=".18"
+            />
+          </svg>
+          <div
+            className={`run-bird ${run.shield > run.tick ? "protected" : ""}`}
+            style={{
+              left: `${(px(run.x) / width) * 100}%`,
+              bottom: `${((118 + run.y * 55 - 13) / 650) * 100}%`,
+              width: `${(118 / width) * 100}%`,
+              height: "25%",
+              filter:
+                run.immune > run.tick && run.tick % 12 < 6
+                  ? "drop-shadow(0 0 5px #e93625)"
+                  : undefined,
+              transform: `translateX(-50%) scale(${run.vy > 0 ? 0.96 : 1.02},${run.vy > 0 ? 1.04 : 0.99})`,
+            }}
+          >
+            <Desenho
+              personagem={character}
+              opaco
+              escolhas={clothes}
+              cor="vermelho"
+              className="w-full h-full"
+              patas={{ andando: running, noAr: !run.ground }}
+            />
           </div>
-
-          {/* Origem do mundo: o nível do chão. Todo objeto nasce aqui e só é
-              deslocado por transform, que é o que o navegador faz de graça. */}
-          <div className="absolute left-0" style={{ bottom: chaoPx || 0, width: 0, height: 0 }}>
-            <div ref={sombraRef} className="absolute left-0 bottom-0 rounded-[50%] bg-ink"
-                 style={{ width: alturaBicho * 0.56, height: alturaBicho * 0.1,
-                          marginBottom: -alturaBicho * 0.05 }} />
-
-            {cena.pocas.map((p) => (
-              <div key={p.id} ref={registrar(`p${p.id}`)} className="absolute left-0 bottom-0 text-ink"
-                   style={{ width: MUNDO.poca.largura * escala, height: MUNDO.poca.altura * escala }}>
-                <PocaDesenho />
+          {running && (
+            <button
+              className="run-touch"
+              aria-label="Pular: toque rápido ou segure para pular mais alto"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.currentTarget.setPointerCapture(e.pointerId);
+                held.current = true;
+                tap.current = true;
+              }}
+              onPointerUp={() => {
+                held.current = false;
+              }}
+              onPointerCancel={() => {
+                held.current = false;
+              }}
+              onLostPointerCapture={() => {
+                held.current = false;
+              }}
+              onContextMenu={(e) => e.preventDefault()}
+            />
+          )}
+          {phase !== "intro" && (
+            <div className="run-hud">
+              <div>
+                <small>PONTOS</small>
+                <strong>{run.score.toLocaleString("pt-BR")}</strong>
               </div>
-            ))}
-
-            {cena.minhocas.map((m) => (
-              <div key={m.id} ref={registrar(`m${m.id}`)}
-                   className="absolute left-0 bottom-0 text-brand animate-pairar"
-                   style={{ width: MUNDO.minhoca.largura * escala,
-                            height: MUNDO.minhoca.altura * escala }}>
-                <MinhocaDesenho />
+              <div className="run-route">
+                <span>
+                  {daily
+                    ? "Desafio do dia · "
+                    : session.current
+                      ? "Premiada · "
+                      : ""}
+                  {STAGES[stage]}
+                </span>
+                <progress
+                  aria-label="Caminho até o estúdio"
+                  max={run.end}
+                  value={run.tick}
+                />
               </div>
-            ))}
-
-            {cena.caixas.map((c) => (
-              <div key={c.id} ref={registrar(`c${c.id}`)}
-                   className={`absolute left-0 bottom-0 grid place-items-center rounded-lg border-[2.5px]
-                               border-ink transition-colors duration-200 ${
-                     c.aberta ? 'bg-raised text-faint' : 'bg-surface text-brand'}`}
-                   style={{ width: MUNDO.caixa.largura * escala, height: MUNDO.caixa.altura * escala,
-                            boxShadow: `${escala * 0.06}px ${escala * 0.06}px 0 0 rgb(var(--c-ink))` }}>
-                <span className="font-display leading-none" style={{ fontSize: escala * 0.6 }}>
-                  {c.aberta ? '·' : '?'}
+              <div>
+                <small>TEMPO</small>
+                <strong>
+                  {Math.ceil((run.end - run.tick) / 60)}
+                  <em>s</em>
+                </strong>
+              </div>
+              {running && (
+                <button
+                  aria-label="Pausar jogo"
+                  onClick={() => {
+                    held.current = false;
+                    setPhase("paused");
+                  }}
+                >
+                  <Pause size={20} />
+                </button>
+              )}
+            </div>
+          )}
+          {running && (
+            <>
+              <div className="run-notice" role="status">
+                {run.noticeUntil > run.tick ? run.notice : ""}
+              </div>
+              <div className="run-power">
+                {run.shield > run.tick && (
+                  <span>
+                    ◇ Escudo {Math.ceil((run.shield - run.tick) / 60)}s
+                  </span>
+                )}
+                {run.magnet > run.tick && (
+                  <span>↟ Ímã {Math.ceil((run.magnet - run.tick) / 60)}s</span>
+                )}
+                {run.combo > 1 && <span>COMBO ×{run.combo}</span>}
+              </div>
+              <div className="run-stage-label">
+                {run.tick < 400
+                  ? "TOQUE PARA PULAR · SEGURE PARA IR MAIS ALTO"
+                  : stage === 2
+                    ? "O ESTÚDIO ESTÁ LOGO ALI"
+                    : "SIGA AS PENAS. ENCONTRE SEU ESTILO."}
+              </div>
+            </>
+          )}
+          {phase === "intro" && (
+            <div className="run-intro">
+              <span className="run-eyebrow">
+                {event.title || "UM QUINTAL. INFINITAS COMBINAÇÕES."}
+              </span>
+              <h1>
+                Seu estilo.
+                <br />
+                Sua corrida<span>.</span>
+              </h1>
+              <p>
+                {event.description ||
+                  "Pule pelos telhados, junte penas e vista as descobertas pelo caminho até o Vital."}
+              </p>
+              <div className="run-intro-actions">
+                <button
+                  className="run-primary"
+                  disabled={busy}
+                  onClick={() => void start("free")}
+                >
+                  <Play size={18} /> Bora correr
+                </button>
+                <button
+                  className="run-secondary"
+                  disabled={busy}
+                  onClick={() => void start("daily")}
+                >
+                  Desafio do dia ↗
+                </button>
+              </div>
+              <button
+                className="run-reward-entry"
+                disabled={busy}
+                onClick={() => void start("reward")}
+              >
+                <Gift size={16} />
+                {busy ? "Preparando…" : "Jogar por benefícios"}{" "}
+                <span>requer conta</span>
+              </button>
+              <div className="run-instructions">
+                <span>
+                  <b>01</b> Corre sozinha
+                </span>
+                <span>
+                  <b>02</b> Toque para pular
+                </span>
+                <span>
+                  <b>03</b> Vista o que encontrar
                 </span>
               </div>
-            ))}
-
-            {cena.itens.map((i) => {
-              const peca = porId.get(i.pecaId)
-              if (!peca) return null
-              return (
-                <div key={i.id} ref={registrar(`i${i.id}`)} className="absolute left-0 bottom-0"
-                     style={{ width: MUNDO.itemTamanho * escala, height: MUNDO.itemTamanho * escala }}>
-                  <div className={`w-full h-full grid place-items-center ${i.pousado ? 'animate-pairar' : ''}`}>
-                    {i.pousado && (
-                      <span className="absolute inset-0 rounded-full border-2 border-dashed border-brand/45" />
-                    )}
-                    <img src={caminhoDaPeca(peca)} alt="" draggable={false}
-                         className="max-w-[78%] max-h-[78%] object-contain miniatura-peca" />
-                  </div>
-                </div>
-              )
-            })}
-
-            <div ref={bichoRef} className="absolute left-0 bottom-0 origin-bottom"
-                 style={{ width: alturaBicho * 0.7275, height: alturaBicho }}>
-              <Desenho personagem={personagem} escolhas={vestido} cor="vermelho"
-                       className="w-full h-full" patas={patas} />
-            </div>
-          </div>
-
-          {aviso && (
-            <div className="absolute left-1/2 top-3 -translate-x-1/2 pointer-events-none animate-pop">
-              <span className={`px-3 py-1.5 rounded-full border-2 text-xs font-semibold
-                                whitespace-nowrap ${
-                aviso.tom === 'bom' ? 'border-ink bg-brand text-white'
-                : aviso.tom === 'ruim' ? 'border-ink bg-ink text-canvas'
-                : 'border-ink bg-surface text-muted'}`}>
-                {aviso.tom === 'bom' ? '✦ ' : aviso.tom === 'ruim' ? '✱ ' : ''}{aviso.texto}
-              </span>
             </div>
           )}
-
-          {fase !== 'jogando' && (
-            <Cartaz fase={fase} personagem={personagem} vestido={vestido} resgatadas={resgatadas}
-                    pontos={pontos} total={acervo.length} catalogo={catalogo} personagemId={personagemId}
-                    aoTrocar={setPersonagemId} aoJogar={jogar}
-                    aoEditar={() => {
-                      guardarPartida(personagem.id, vestido)
-                      navegar('/montar', { state: { escolhas: vestido, personagem: personagem.id } })
-                    }} />
+          {phase === "countdown" && (
+            <div className="run-overlay countdown">
+              <strong>{count || "VAI!"}</strong>
+              <p>Um toque. Um pulo. Seu estilo.</p>
+            </div>
+          )}
+          {phase === "paused" && (
+            <div className="run-overlay">
+              <span className="run-eyebrow">RESPIRA UM POUCO</span>
+              <h2>Quintal em pausa</h2>
+              <p>A corrida continua de onde você parou.</p>
+              <button
+                className="run-primary"
+                onClick={() => {
+                  unlockAudio();
+                  setCount(3);
+                  setPhase("countdown");
+                }}
+              >
+                <Play size={18} /> Continuar
+              </button>
+              <button
+                className="run-secondary"
+                onClick={() => {
+                  setPhase("intro");
+                  held.current = false;
+                }}
+              >
+                Voltar ao início
+              </button>
+            </div>
+          )}
+          {phase === "end" && (
+            <div className="run-overlay run-result">
+              <span className="run-eyebrow">VOCÊ CHEGOU AO ATELIÊ</span>
+              <h2>
+                {run.score.toLocaleString("pt-BR")} <small>pontos</small>
+              </h2>
+              <p>
+                {run.score >= progress.best
+                  ? "Seu melhor resultado!"
+                  : "Mais uma história no quintal."}{" "}
+                {daily && `Desafio de ${dayKey()}`}
+              </p>
+              <div className="run-result-stats">
+                <span>
+                  <b>{run.feathers}</b> penas
+                </span>
+                <span>
+                  <b>{run.worms}</b> minhocas
+                </span>
+                <span>
+                  <b>{run.boxes}</b> caixas
+                </span>
+              </div>
+              {newAchievements.length > 0 && (
+                <p className="run-achievement">
+                  ✦ {newAchievements.map((id) => ACHIEVEMENTS[id]).join(" · ")}
+                </p>
+              )}
+              <div className="run-final-missions">
+                {missions(run).map((m) => (
+                  <span
+                    key={m.id}
+                    className={m.value >= m.target ? "done" : ""}
+                  >
+                    {m.value >= m.target ? "✓" : "○"} {m.name}
+                  </span>
+                ))}
+              </div>
+              {rewardStatus && <p role="status">{rewardStatus}</p>}
+              {pending && (
+                <button
+                  className="run-secondary"
+                  disabled={busy}
+                  onClick={() => void sendResult()}
+                >
+                  Tentar validar novamente
+                </button>
+              )}
+              {coupons
+                .filter((c) => c.created > Date.now() - 10 * 60000)
+                .map((c) => (
+                  <a
+                    key={c.code}
+                    className="run-primary"
+                    href={couponLink(c)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Enviar {c.name} para o Vital ↗
+                  </a>
+                ))}
+              <div className="run-result-actions">
+                <button
+                  className="run-primary"
+                  onClick={() => void start("free")}
+                  disabled={busy}
+                >
+                  <RotateCcw size={16} /> De novo
+                </button>
+                <button className="run-secondary" onClick={edit}>
+                  Ver meu desenho
+                </button>
+                {card && (
+                  <button
+                    className="run-secondary"
+                    onClick={() =>
+                      void shareCard(card).catch((e) => {
+                        if (e?.name !== "AbortError")
+                          setError("Não foi possível compartilhar a imagem.");
+                      })
+                    }
+                  >
+                    Compartilhar imagem
+                  </button>
+                )}
+                <a
+                  className="run-secondary"
+                  href={`https://wa.me/?text=${encodeURIComponent(`Fiz ${run.score} pontos no ${MARCA.nomeCompleto}! Montei meu personagem com ${collected.length} acessórios. ${location.origin}${import.meta.env.BASE_URL}jogo`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Share2 size={16} /> Compartilhar
+                </a>
+              </div>
+            </div>
           )}
         </div>
-      </main>
-
-      <Coleta resgatadas={resgatadas} porId={porId} />
-
-      <div className="mt-auto">
-        <Controles comandoRef={comandoRef} ativo={fase === 'jogando'} />
-      </div>
-    </div>
-  )
-}
-
-function Regra({ texto, children }: { texto: string; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-      {children}{texto}
-    </span>
-  )
-}
-
-/**
- * Minhoca e poça são desenhadas em código, e não em PNG: o Vital não precisa
- * desenhar nada para o jogo existir, e elas seguem a mesma linguagem grossa e
- * preta das caixas. Se um dia ele quiser desenhá-las à mão, é trocar aqui.
- */
-function MinhocaDesenho() {
-  return (
-    <svg viewBox="0 0 44 18" className="w-full h-full overflow-visible" aria-hidden>
-      <path d="M3 15 Q 9 3 15 13 T 27 12 Q 32 11 34 6"
-            fill="none" stroke="currentColor" strokeWidth="4.6" strokeLinecap="round" />
-      <circle cx="36" cy="5" r="4.4" fill="currentColor" />
-      <circle cx="37.6" cy="4" r="1.1" fill="rgb(var(--c-surface))" />
-    </svg>
-  )
-}
-
-function PocaDesenho() {
-  return (
-    <svg viewBox="0 0 72 16" preserveAspectRatio="none" className="w-full h-full" aria-hidden>
-      <path d="M4 16 C 2 9 8 5 15 7 C 21 8 24 2 33 4 C 40 5 44 10 51 8
-               C 58 6 66 8 68 16 Z" fill="currentColor" />
-    </svg>
-  )
-}
-
-/**
- * O que já caiu nesta partida. Ocupa a faixa que sobra entre a janela e o
- * comando com a única coisa que o jogador quer olhar ali: o que ele ganhou.
- */
-function Coleta({ resgatadas, porId }: { resgatadas: string[]; porId: Map<string, Peca> }) {
-  // Antes de juntar qualquer coisa esta faixa mostra as regras, com os mesmos
-  // símbolos que aparecem no jogo. Ler "pule por baixo da caixa" ao lado do
-  // desenho da caixa ensina mais rápido do que um parágrafo no cartaz.
-  if (!resgatadas.length) {
-    return (
-      <div className="px-4 py-3 flex flex-wrap justify-center items-center gap-x-4 gap-y-2
-                      text-[11px] text-muted">
-        <Regra texto="pule por baixo">
-          <span className="w-6 h-[18px] rounded border-2 border-ink bg-surface grid place-items-center
-                           font-display text-[9px] text-brand leading-none">?</span>
-        </Regra>
-        <Regra texto={`pise em cima · ${MUNDO.pontosMinhoca} pts`}>
-          <span className="w-6 h-[14px] text-brand"><MinhocaDesenho /></span>
-        </Regra>
-        <Regra texto="pule por cima">
-          <span className="w-6 h-[10px] text-ink"><PocaDesenho /></span>
-        </Regra>
-      </div>
-    )
-  }
-  return (
-    // Altura em pixel, não em rem: é uma tira de figurinha, não texto. Em rem
-    // ela cresceria junto com a fonte do sistema e comeria a tela.
-    <div className="flex gap-2 overflow-x-auto px-4 py-3">
-      {resgatadas.map((id) => {
-        const peca = porId.get(id)
-        if (!peca) return null
-        return (
-          <div key={id} title={peca.rotulo ?? id}
-               className="shrink-0 w-[56px] h-[56px] rounded-xl border-2 border-ink/10 bg-surface
-                          grid place-items-center p-1.5 animate-pop">
-            <img src={caminhoDaPeca(peca)} alt={peca.rotulo ?? ''} loading="lazy"
-                 className="max-w-full max-h-full object-contain miniatura-peca" />
+        <aside className="run-sidebar">
+          <div className="run-sidebar-title">
+            <span>SEU PASSAPORTE</span>
+            <Trophy size={16} />
           </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/**
- * Telas de abertura e de fim. Ficam DENTRO da janela de jogo, e não como
- * modal sobre a página: assim não há chance de cobrir os controles.
- */
-function Cartaz({ fase, personagem, vestido, resgatadas, pontos, total, catalogo, personagemId, aoTrocar, aoJogar, aoEditar }: {
-  fase: Fase; personagem: Personagem; vestido: Escolhas; resgatadas: string[]
-  pontos: number; total: number
-  catalogo: Catalogo; personagemId: string | null
-  aoTrocar: (id: string) => void; aoJogar: () => void; aoEditar: () => void
-}) {
-  const bichos = personagensVisiveis(catalogo)
-  return (
-    // Fundo opaco, e não translúcido: com o mundo aparecendo por trás, o
-    // desenho da galinha do cartaz brigava com a galinha do jogo e o texto
-    // ficava ilegível em cima do chão listrado.
-    <div className="absolute inset-0 bg-canvas overflow-y-auto
-                    flex flex-col items-center justify-center text-center p-4 gap-3">
-      {fase === 'abertura' ? (
-        <>
-          {/* Sem artigo antes do nome: o Vital já desenha outros bichos, e
-              "do/da" erraria o gênero na metade deles. */}
-          <h1 className="font-display text-xl leading-tight">{personagem.nome} na corrida</h1>
-          {/* O cartaz fica curto de propósito: as regras moram na faixa
-              abaixo da janela, que estava vazia. Um cartaz com tudo escrito
-              empurrava o botão de começar para fora da vista em tela pequena. */}
-          <p className="text-xs text-muted max-w-[30ch] leading-relaxed">
-            Junte acessórios em {MUNDO.duracao} segundos. As regras estão logo abaixo.
-          </p>
-          {bichos.length > 1 && (
-            <div className="flex gap-2 flex-wrap justify-center">
-              {bichos.map((b) => (
-                <button key={b.id} onClick={() => aoTrocar(b.id)}
-                  className={`px-3 py-1.5 rounded-full border-2 text-xs font-semibold ${
-                    b.id === personagemId ? 'border-ink bg-ink text-canvas' : 'border-ink/15 text-muted'}`}>
-                  {b.nome}
-                </button>
-              ))}
-            </div>
+          <div className="run-record">
+            <strong>{progress.best.toLocaleString("pt-BR")}</strong>
+            <span>seu recorde</span>
+          </div>
+          {phase === "intro" && personagensVisiveis(catalog).length > 1 && (
+            <label className="run-select">
+              Seu personagem
+              <select
+                value={personId}
+                onChange={(e) => setPersonId(e.target.value)}
+              >
+                {personagensVisiveis(catalog).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
-          <button onClick={aoJogar} className="botao-principal !px-5 !py-2.5 mt-1">
-            <Play size={18} /> Começar
-          </button>
-        </>
-      ) : (
-        <>
-          <p className="etiqueta">Fim da corrida</p>
-          <p className="font-display text-3xl leading-none">{pontos} pts</p>
-          <p className="text-xs text-muted -mt-1">
-            {resgatadas.length === 0 ? 'nenhum acessório desta vez'
-              : `${resgatadas.length} ${resgatadas.length === 1 ? 'acessório' : 'acessórios'} de ${total}`}
+          <div className="run-missions">
+            <h3>Pequenas missões</h3>
+            {missions(run)
+              .slice(0, 3)
+              .map((m) => (
+                <div key={m.id}>
+                  <span>
+                    {m.name}
+                    <b>
+                      {Math.min(m.value, m.target)}/{m.target}
+                    </b>
+                  </span>
+                  <progress max={m.target} value={m.value} />
+                </div>
+              ))}
+          </div>
+          <div className="run-collected">
+            <h3>
+              {collected.length
+                ? "Seu estilo nesta corrida"
+                : "Uma peça de cada vez"}
+            </h3>
+            {collected.length ? (
+              <div>
+                {collected.map((p, i) => (
+                  <img
+                    key={`${p.id}-${i}`}
+                    src={caminhoDaPeca(p)}
+                    alt={p.rotulo}
+                    className="miniatura-peca"
+                  />
+                ))}
+              </div>
+            ) : (
+              <p>As peças caem à frente. Passe por elas para vestir ou pule por cima para manter seu visual.</p>
+            )}
+          </div>
+          <nav className="run-nav">
+            <button
+              disabled={running || phase === "countdown"}
+              onClick={() => void openPanel("collection")}
+            >
+              Coleção <span>{progress.collection.length} ↗</span>
+            </button>
+            <button
+              disabled={running || phase === "countdown"}
+              onClick={() => void openPanel("coupons")}
+            >
+              Meus benefícios <Gift size={15} />
+            </button>
+            <button
+              disabled={running || phase === "countdown"}
+              onClick={() => void openPanel("ranking")}
+            >
+              Ranking da semana <Trophy size={15} />
+            </button>
+          </nav>
+          <p className="run-local-note">
+            Coleção e recorde livre ficam neste aparelho. Benefícios e ranking
+            usam corridas validadas.
           </p>
-          <div className="h-[34%] aspect-[0.7275] shrink-0">
-            <Desenho personagem={personagem} escolhas={vestido} cor="vermelho" className="w-full h-full" />
-          </div>
-          <div className="flex gap-2 flex-wrap justify-center">
-            <button onClick={aoJogar} className="botao-neutro !px-4 !py-2 text-sm">
-              <RotateCcw size={16} /> De novo
+        </aside>
+      </div>
+      {error && (
+        <div className="run-error" role="alert">
+          {error}
+          <button aria-label="Fechar aviso" onClick={() => setError("")}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+      <footer className="run-footer">
+        <span>FEITO DE TRAÇO, TINTA E PERSONALIDADE.</span>
+        <span>Arte do Vital Monteiro</span>
+      </footer>
+      {panel && (
+        <div
+          className="run-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={
+            panel === "collection"
+              ? "Coleção"
+              : panel === "coupons"
+                ? "Meus benefícios"
+                : "Ranking"
+          }
+        >
+          <div>
+            <button
+              className="run-modal-close"
+              autoFocus
+              aria-label="Fechar"
+              onClick={() => setPanel(null)}
+            >
+              <X />
             </button>
-            <button onClick={aoEditar} className="botao-principal !px-4 !py-2 text-sm">
-              Abrir no editor
-            </button>
+            <h2>
+              {panel === "collection"
+                ? "Seu álbum do quintal"
+                : panel === "coupons"
+                  ? "Meus benefícios"
+                  : "Ranking da semana"}
+            </h2>
+            {busy && <p role="status">Carregando…</p>}
+            {panel === "collection" && (
+              <>
+                <p>
+                  {progress.collection.length} peças descobertas ·{" "}
+                  {progress.runs.length} últimas corridas
+                </p>
+                <div className="run-badges">
+                  {Object.entries(ACHIEVEMENTS).map(([id, title]) => (
+                    <span
+                      key={id}
+                      className={
+                        progress.achievements.includes(id) ? "earned" : ""
+                      }
+                    >
+                      {progress.achievements.includes(id) ? "✦" : "◇"} {title}
+                    </span>
+                  ))}
+                </div>
+                <div className="run-album">
+                  {allPieces.map((p) => (
+                    <div key={p.id}>
+                      {progress.collection.includes(p.id) ? (
+                        <img
+                          src={caminhoDaPeca(p)}
+                          alt={p.rotulo}
+                          className="miniatura-peca"
+                        />
+                      ) : (
+                        <span>?</span>
+                      )}
+                      <small>
+                        {progress.collection.includes(p.id)
+                          ? p.rotulo
+                          : "A descobrir"}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+                <h3>Desafio da semana</h3>
+                <p>
+                  Abra 30 caixas:{" "}
+                  {Math.min(
+                    30,
+                    progress.weekly?.key === weekKey()
+                      ? progress.weekly.boxes
+                      : progress.runs
+                          .filter(
+                            (r) =>
+                              r.date >=
+                              new Date(weekKey() + "T00:00:00Z").getTime(),
+                          )
+                          .reduce((n, r) => n + r.boxes, 0),
+                  )}
+                  /30.
+                </p>
+                {event.pieces.length > 0 && (
+                  <p>
+                    Coleção {event.title}:{" "}
+                    {
+                      event.pieces.filter((id) =>
+                        progress.collection.includes(id),
+                      ).length
+                    }
+                    /{event.pieces.length} peças.
+                  </p>
+                )}
+                <h3>Histórico recente</h3>
+                {progress.runs.slice(0, 5).map((r, i) => (
+                  <p key={i}>
+                    {new Date(r.date).toLocaleDateString("pt-BR")} · {r.score}{" "}
+                    pontos · {r.boxes} caixas
+                  </p>
+                ))}
+              </>
+            )}
+            {panel === "coupons" && (
+              <>
+                {!usuario ? (
+                  <Link
+                    className="run-primary"
+                    to="/entrar"
+                    state={{ destino: "/jogo" }}
+                  >
+                    Entrar para ver benefícios
+                  </Link>
+                ) : (
+                  <>
+                    {pending && (
+                      <button
+                        disabled={busy}
+                        className="run-secondary"
+                        onClick={() => void sendResult()}
+                      >
+                        Validar corrida pendente
+                      </button>
+                    )}
+                    {rewardStatus && <p role="status">{rewardStatus}</p>}
+                    {!busy && !coupons.length && (
+                      <p>
+                        Você ainda não tem benefícios. Participe de uma corrida
+                        premiada e abra caixas surpresa.
+                      </p>
+                    )}
+                    {coupons.map((c) => (
+                      <article className="run-coupon" key={c.code}>
+                        <Gift />
+                        {c.image && (
+                          <img
+                            src={c.image}
+                            alt=""
+                            className="h-24 w-full object-contain"
+                          />
+                        )}
+                        <h3>{c.name}</h3>
+                        {c.description && <p>{c.description}</p>}
+                        <p>{c.terms}</p>
+                        <code>{c.code}</code>
+                        <p>
+                          Até {new Date(c.expires).toLocaleDateString("pt-BR")}{" "}
+                          ·{" "}
+                          {c.usedAt
+                            ? "Utilizado"
+                            : c.expires < Date.now()
+                              ? "Expirado"
+                              : "Disponível"}
+                        </p>
+                        {!c.usedAt && c.expires > Date.now() && (
+                          <a
+                            className="run-primary"
+                            target="_blank"
+                            rel="noreferrer"
+                            href={couponLink(c)}
+                          >
+                            Enviar para o Vital no WhatsApp ↗
+                          </a>
+                        )}
+                      </article>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+            {panel === "ranking" && (
+              <>
+                <p>
+                  Semana de{" "}
+                  {new Date(weekKey() + "T12:00:00").toLocaleDateString(
+                    "pt-BR",
+                  )}
+                  . Somente corridas validadas; nomes públicos são apelidos
+                  automáticos.
+                </p>
+                {ranking.map((r, i) => (
+                  <div className="run-ranking" key={r.alias}>
+                    <b>{i + 1}</b>
+                    <span>{r.alias}</span>
+                    <strong>{r.score} pts</strong>
+                  </div>
+                ))}
+                {!busy && !ranking.length && (
+                  <p>O pódio está esperando os primeiros corredores.</p>
+                )}
+              </>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
-  )
+  );
 }
 
-/**
- * O comando. Botões grandes e separados: o polegar esquerdo anda, o direito
- * pula, e os dois podem estar apertados ao mesmo tempo — daí o pointer capture
- * em vez de onClick.
- */
-function Controles({ comandoRef, ativo }: { comandoRef: React.MutableRefObject<Comando>; ativo: boolean }) {
-  const apertar = (acao: keyof Comando, ligado: boolean) => (ev: React.PointerEvent) => {
-    ev.preventDefault()
-    if (ligado) ev.currentTarget.setPointerCapture(ev.pointerId)
-    // Andar é estado: vale enquanto o dedo está em cima. Pular é pedido: soltar
-    // o botão não cancela, senão um toque curto se perderia entre dois quadros.
-    if (ligado || acao !== 'pular') comandoRef.current[acao] = ligado
-  }
-  const props = (acao: keyof Comando) => ({
-    onPointerDown: apertar(acao, true),
-    onPointerUp: apertar(acao, false),
-    onPointerCancel: apertar(acao, false),
-    onLostPointerCapture: () => { if (acao !== 'pular') comandoRef.current[acao] = false },
-    onContextMenu: (ev: React.MouseEvent) => ev.preventDefault(),
-    // Tamanho em pixel, de propósito: um polegar é um polegar. Em rem, quem
-    // aumenta a fonte do sistema ganha botões de 104px e a linha não cabe mais
-    // na tela — foi assim que a página passou a rolar de lado.
-    className: `botao-neutro touch-none !px-0 !py-0 w-[64px] h-[64px] shrink-0 transition-opacity ${
-      ativo ? '' : 'opacity-35'}`,
-  })
+function ObjectDrawing({ thing: o, x, accessory }: { thing: Thing; x: number; accessory?: string }) {
+  const y = 532 - o.y * 55,
+    w = o.w * 55,
+    h = o.h * 55;
   return (
-    <div data-controles className="px-4 pt-4 pb-5 safe-bottom flex items-center justify-between gap-3">
-      <div className="flex gap-3">
-        <button {...props('esquerda')} aria-label="Ir para trás"><ChevronLeft size={26} /></button>
-        <button {...props('direita')} aria-label="Ir para frente"><ChevronRight size={26} /></button>
-      </div>
-      <button {...props('pular')} aria-label="Pular" className={`${props('pular').className} !bg-brand !text-white`}>
-        <ChevronUp size={30} />
-      </button>
-    </div>
-  )
+    <g transform={`translate(${x},${y})`}>
+      {(o.kind === "box" || o.kind === "gift") && (
+        <g>
+          <path
+            d={`M${-w / 2 + 4} ${-h + 4}h${w}v${h}h${-w}z`}
+            fill="#3c352d"
+          />
+          <rect
+            x={-w / 2}
+            y={-h}
+            width={w}
+            height={h}
+            rx="7"
+            fill={o.kind === "gift" ? "#e93625" : "#fffaf1"}
+            stroke="#3c352d"
+            strokeWidth="2.5"
+          />
+          {o.kind === "gift" ? (
+            <>
+              <path
+                d={`M0 ${-h}v${h}M${-w / 2} ${-h / 2}h${w}`}
+                stroke="#fff5e5"
+                strokeWidth="4"
+              />
+              <path
+                d={`M0 ${-h}q-32-25-22-27q24-8 22 27q27-31 30-19q3 15-30 19`}
+                fill="none"
+                stroke="#c42d20"
+                strokeWidth="3"
+              />
+            </>
+          ) : (
+            <text
+              y={-h / 2 + 11}
+              textAnchor="middle"
+              fontSize="32"
+              fontWeight="900"
+              fill="#ed3525"
+            >
+              ?
+            </text>
+          )}
+        </g>
+      )}
+      {o.kind === "accessory" && (
+        <g>
+          <rect x={-w / 2} y={-h} width={w} height={h} rx="9" fill="#fffaf1" stroke="#e93625" strokeWidth="2" strokeDasharray="4 3" />
+          {accessory ? <image href={accessory} x={-w / 2 + 3} y={-h + 3} width={w - 6} height={h - 6} preserveAspectRatio="xMidYMid meet" /> : <text y={-12} textAnchor="middle" fill="#e93625">?</text>}
+          <text y={-h - 9} textAnchor="middle" fontSize="12" fontWeight="700" fill="#44362d">Pule para deixar</text>
+        </g>
+      )}
+      {o.kind === "worm" && (
+        <g transform="scale(-1,1)">
+          <path
+            d="M-26-7Q-16-29-5-13T16-13"
+            fill="none"
+            stroke="#e93625"
+            strokeWidth="9"
+            strokeLinecap="round"
+          />
+          <circle cx="23" cy="-15" r="10" fill="#e93625" />
+          <circle cx="27" cy="-18" r="2.3" fill="#fff" />
+          <path d="M29-12l-5 2" stroke="#843329" strokeWidth="1.6" />
+        </g>
+      )}
+      {o.kind === "ink" && (
+        <>
+          <path
+            d="M-39 0q-5-13 11-12q0-12 18-5q12-12 23 1q18-2 24 16z"
+            fill="#44362d"
+          />
+          <path
+            d="M-14-7q9-5 17 0"
+            fill="none"
+            stroke="#a89077"
+            strokeWidth="2"
+          />
+        </>
+      )}
+      {o.kind === "platform" && (
+        <>
+          <rect
+            x={-w / 2}
+            y={-h}
+            width={w}
+            height={h}
+            rx="4"
+            fill="#d3b997"
+            stroke="#554636"
+            strokeWidth="2"
+          />
+          <path
+            d={`M${-w / 2 + 6} -5h${w - 12}`}
+            stroke="#8a7155"
+            strokeWidth="2"
+          />
+        </>
+      )}
+      {o.kind === "feather" && (
+        <g transform="translate(0,-14) rotate(25)">
+          <path d="M0 16Q-21-8 0-20Q19-8 0 16" fill="#e93625" />
+          <path
+            d="M0-13v32m0-21-7-5m7 12 8-7"
+            stroke="#fff0d7"
+            strokeWidth="1.5"
+          />
+        </g>
+      )}
+      {["shield", "magnet", "clock"].includes(o.kind) && (
+        <g>
+          <circle
+            cy="-22"
+            r="24"
+            fill="#fffaf1"
+            stroke="#44362d"
+            strokeWidth="2"
+            strokeDasharray="4 3"
+          />
+          <text y="-13" textAnchor="middle" fontSize="27" fill="#e93625">
+            {o.kind === "shield" ? "◇" : o.kind === "magnet" ? "↟" : "+3"}
+          </text>
+        </g>
+      )}
+    </g>
+  );
 }

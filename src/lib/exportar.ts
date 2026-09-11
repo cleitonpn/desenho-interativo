@@ -2,6 +2,7 @@ import { CORES, LUMINANCIA, MARCA, aplicarCurvaEm, curvaDaCor, type CorId } from
 import { caminhoDaPeca } from './catalogo'
 import { camadasEmOrdem } from './composicao'
 import type { Escolhas, Personagem } from './tipos'
+import { silhouetteFor } from './silhueta'
 
 const cacheImg = new Map<string, HTMLImageElement>()
 
@@ -37,6 +38,8 @@ interface OpcoesExport {
   semAssinatura?: boolean
   /** Fundo transparente em vez de branco. */
   transparente?: boolean
+  /** Back each closed shape for game result cards on illustrated backgrounds. */
+  opaco?: boolean
 }
 
 /**
@@ -78,6 +81,10 @@ export async function renderizar(
 
   for (const peca of camadas) {
     const img = await carregarImagem(caminhoDaPeca(peca))
+    if (opcoes.opaco && peca.slot === 'base') {
+      const backing = await carregarImagem(await silhouetteFor(caminhoDaPeca(peca)))
+      ctx.drawImage(backing, (peca.x - cx) * escala, (peca.y - cy) * escala, peca.w * escala, peca.h * escala)
+    }
     ctx.drawImage(img, (peca.x - cx) * escala, (peca.y - cy) * escala, peca.w * escala, peca.h * escala)
   }
 

@@ -1,0 +1,23 @@
+{
+  "name": "quintal-game-functions",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "esbuild ../src/lib/corrida.ts --bundle --platform=node --format=esm --outfile=engine.mjs",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.4.0",
+    "firebase-functions": "^7.3.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "overrides": {
+    "gaxios": { "uuid": "^11.1.1" }
+  }
+}

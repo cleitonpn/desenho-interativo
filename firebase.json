@@ -1,4 +1,5 @@
 {
+  "functions": [{ "source": "functions", "codebase": "quintal-game", "predeploy": ["npm --prefix functions run build"] }],
   "hosting": {
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],

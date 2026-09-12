@@ -642,6 +642,7 @@ export function Jogo() {
                 {run.noticeUntil > run.tick ? run.notice : ""}
               </div>
               <div className="run-power">
+                {run.tickets.length > 0 && <span>🎟 {run.tickets.length} {session.current ? "a conferir no final" : "· demonstração"}</span>}
                 {run.shield > run.tick && (
                   <span>
                     ◇ Escudo {Math.ceil((run.shield - run.tick) / 60)}s
@@ -767,6 +768,9 @@ export function Jogo() {
                 <span>
                   <b>{run.boxes}</b> caixas
                 </span>
+                <span>
+                  <b>{run.tickets.length}</b> cupons coletados
+                </span>
               </div>
               {newAchievements.length > 0 && (
                 <p className="run-achievement">
@@ -783,6 +787,7 @@ export function Jogo() {
                   </span>
                 ))}
               </div>
+              {run.tickets.length > 0 && !session.current && <p>Cupons de demonstração. Entre e escolha “Jogar por benefícios” para concorrer aos benefícios reais.</p>}
               {rewardStatus && <p role="status">{rewardStatus}</p>}
               {pending && (
                 <button
@@ -900,7 +905,7 @@ export function Jogo() {
                 ))}
               </div>
             ) : (
-              <p>As peças caem à frente. Passe por elas para vestir ou pule por cima para manter seu visual.</p>
+              <p>As peças caem à frente. Passe por elas para vestir ou pule por cima para manter seu visual. Caixas vermelhas também soltam cupons surpresa: pegue e confira o resultado no final.</p>
             )}
           </div>
           <nav className="run-nav">
@@ -1189,6 +1194,14 @@ function ObjectDrawing({ thing: o, x, accessory }: { thing: Thing; x: number; ac
               ?
             </text>
           )}
+        </g>
+      )}
+      {o.kind === "coupon" && (
+        <g>
+          <rect x={-w / 2} y={-h} width={w} height={h} rx="7" fill="#fff0b8" stroke="#b54a24" strokeWidth="2.5" />
+          <path d={`M${w / 2 - 13} ${-h + 5}v${h - 10}`} stroke="#b54a24" strokeDasharray="3 3" />
+          <text x="-5" y={-h / 2 + 7} textAnchor="middle" fontSize="23" fontWeight="900" fill="#b54a24">%</text>
+          <text y={-h - 10} textAnchor="middle" fontSize="13" fontWeight="800" fill="#44362d">CUPOM SURPRESA</text>
         </g>
       )}
       {o.kind === "accessory" && (

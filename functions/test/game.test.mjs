@@ -224,3 +224,23 @@ test("jumping over a dropped piece preserves outfit even with magnet active", ()
   assert.equal(piece.taken, false);
   assert.ok(r.x > piece.x + 1);
 });
+
+test("gift releases a visible coupon; opening alone does not collect it", () => {
+  const r = isolate();
+  r.y = 1.55; r.vy = 10; r.ground = false;
+  r.things = [thing("gift", 0.08, 3.5, 1.3, 1)];
+  stepRun(r, true);
+  assert.deepEqual(r.tickets, []);
+  assert.equal(r.things.filter(o => o.kind === "coupon").length, 1);
+  for (let i = 0; i < 150; i++) stepRun(r, false);
+  assert.deepEqual(r.tickets, [1]);
+  assert.deepEqual(r.items, [1]);
+});
+test("jumping past a coupon does not grant it and magnet cannot collect it", () => {
+  const r = isolate();
+  const ticket = {...thing("coupon", 3, 0, 1.2, 0.9), sourceId: 7};
+  r.things = [ticket]; r.magnet = 600;
+  for (let i = 0; i < 90; i++) stepRun(r, true);
+  assert.deepEqual(r.tickets, []);
+  assert.equal(ticket.taken, false);
+});

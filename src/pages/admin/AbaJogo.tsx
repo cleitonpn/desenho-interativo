@@ -316,7 +316,7 @@ export function AbaJogo() {
             )}
             {numberField(
               "chance",
-              "Chance por caixa surpresa (%)",
+              "Chance por cupom surpresa coletado (%)",
               0,
               100,
               0.1,
@@ -409,7 +409,7 @@ export function AbaJogo() {
             <p className="text-sm text-muted">{r.description}</p>
             <p className="text-xs">
               {r.issued}/{r.stock} emitidos · {r.used} usados · {r.chance}% por
-              caixa surpresa
+              cupom surpresa coletado
             </p>
             <button
               className="botao-neutro !py-2"

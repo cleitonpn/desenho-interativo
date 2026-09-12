@@ -137,7 +137,7 @@ export const finishRun = onCall(options, async (req) => {
     }
     const coupons = [];
     for (const { rewardRef, reward: r, usageRef, usage } of reads) {
-      if (!r || !run.gifts.length || !eligible(r, usage, run, now, completed))
+      if (!r || !run.tickets.length || !eligible(r, usage, run, now, completed))
         continue;
       const roll =
         parseInt(
@@ -147,7 +147,7 @@ export const finishRun = onCall(options, async (req) => {
             .slice(0, 8),
           16,
         ) / 4294967296;
-      const chance = 1 - Math.pow(1 - r.chance / 100, run.gifts.length);
+      const chance = 1 - Math.pow(1 - r.chance / 100, run.tickets.length);
       if (roll >= chance) continue;
       const coupon = {
         code,
@@ -177,6 +177,7 @@ export const finishRun = onCall(options, async (req) => {
       finished: now,
       boxes: run.boxes,
       gifts: run.gifts.length,
+      tickets: run.tickets.length,
     });
     tx.set(
       playerRef,

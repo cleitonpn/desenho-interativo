@@ -93,3 +93,9 @@ Referências de implementação: [funções callable](https://firebase.google.co
 O workflow `Publicar funções do jogo` instala as dependências, testa a simulação e publica somente `functions:quintal-game` usando o secret existente `FIREBASE_SERVICE_ACCOUNT`. Executa em alterações do backend na branch de produção ou manualmente em Actions. Não usa `--force` e não publica campanhas comerciais.
 
 As regras e índices do Firestore são publicados pelo workflow separado. O Storage fica manual: copie `storage.rules` para Firebase Console > Storage > Rules e publique. A separação evita que a falta de permissão `firebasestorage.defaultBucket.get` bloqueie os outros deploys. Alterar regras não concede permissões IAM à conta do GitHub.
+
+## Cupons no cenário
+
+Caixas vermelhas soltam também um bilhete de cupom surpresa, separado do acessório. O jogador precisa encostar no bilhete após a queda para coletá-lo. Abrir a caixa sem pegar o bilhete não concede chance de benefício. O contador acompanha a coleta; no modo livre os bilhetes são demonstração. Nas corridas por benefícios, o replay do servidor confirma a coleta e aplica a chance por bilhete, estoque e condições da campanha. O cupom comercial é emitido apenas no final, no máximo um por partida.
+
+O workflow configura retenção de sete dias para imagens de build das funções no Artifact Registry de southamerica-east1. Isso não apaga as funções nem os dados do jogo.

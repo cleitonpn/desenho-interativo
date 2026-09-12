@@ -1,5 +1,5 @@
 /** Fixed-step simulation shared by the browser and the reward server. No browser APIs. */
-export const VERSION = 2;
+export const VERSION = 3;
 export const FPS = 60;
 export type Kind =
   | "box"
@@ -11,7 +11,8 @@ export type Kind =
   | "magnet"
   | "clock"
   | "gift"
-  | "accessory";
+  | "accessory"
+  | "coupon";
 export type Input = { tick: number; held: boolean };
 export type Thing = {
   id: number;
@@ -53,6 +54,7 @@ export type Run = {
   rng: number;
   gifts: number[];
   items: number[];
+  tickets: number[];
   notice: string;
   noticeUntil: number;
   effects: { x: number; y: number; until: number }[];
@@ -84,6 +86,7 @@ export function createRun(seed: number): Run {
     rng: seed >>> 0,
     gifts: [],
     items: [],
+    tickets: [],
     notice: "Toque para pular. Segure para ir mais alto.",
     noticeUntil: 300,
     effects: [],
@@ -173,10 +176,10 @@ export function stepRun(r: Run, held: boolean): void {
       if (o.x - r.x < 12) o.active = true;
       if (o.active) o.x -= 1.05 * dt;
     }
-    if (o.kind === "accessory" && o.flight !== undefined && o.flight < 45) {
+    if ((o.kind === "accessory" || o.kind === "coupon") && o.flight !== undefined && o.flight < 45) {
       o.flight++;
       const t = o.flight / 45;
-      o.x = o.originX! + 7 * t;
+      o.x = o.originX! + (o.kind === "coupon" ? 10 : 7) * t;
       o.y = t === 1 ? 0 : o.originY! * (1 - t) + 2 * Math.sin(Math.PI * t);
       // Only a landed piece can be worn: its flight never forces an outfit.
       continue;
@@ -202,10 +205,17 @@ export function stepRun(r: Run, held: boolean): void {
           w: 0.85, h: 0.85, taken: false,
           sourceId: o.id, flight: 0, originX: o.x, originY: o.y,
         });
-        if (o.kind === "gift") r.gifts.push(o.id);
+        if (o.kind === "gift") {
+          r.gifts.push(o.id);
+          r.things.push({
+            id: r.seq++, kind: "coupon", x: o.x, y: o.y,
+            w: 1.2, h: 0.9, taken: false,
+            sourceId: o.id, flight: 0, originX: o.x, originY: o.y,
+          });
+        }
         feedback(
           r,
-          "+50 · Passe na peça para vestir; pule para deixar",
+          o.kind === "gift" ? "+50 · Um cupom surpresa! Pegue no caminho" : "+50 · Passe na peça para vestir; pule para deixar",
           o.x,
           o.y,
         );
@@ -246,6 +256,10 @@ export function stepRun(r: Run, held: boolean): void {
       o.kind === "feather" && r.magnet > r.tick && Math.abs(r.x - o.x) < 3.5;
     if (!touching && !attracted) continue;
     o.taken = true;
+    if (o.kind === "coupon") {
+      r.tickets.push(o.sourceId!);
+      feedback(r, "Cupom coletado! Confira no final", o.x, o.y);
+    }
     if (o.kind === "accessory") {
       r.items.push(o.sourceId!);
       feedback(r, "Peça vestida!", o.x, o.y);

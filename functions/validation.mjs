@@ -1,5 +1,6 @@
+import { MAX_TICKS } from "./engine.mjs";
 export function validateInputs(inputs) {
-  if (!Array.isArray(inputs) || inputs.length > 1800)
+  if (!Array.isArray(inputs) || inputs.length > 3600)
     throw Error("Comandos inválidos.");
   let last = -1,
     held = false;
@@ -9,7 +10,7 @@ export function validateInputs(inputs) {
       !Number.isInteger(input.tick) ||
       input.tick <= last ||
       input.tick < 0 ||
-      input.tick >= 4200 ||
+      input.tick >= MAX_TICKS ||
       typeof input.held !== "boolean" ||
       input.held === held
     )

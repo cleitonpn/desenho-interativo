@@ -58,6 +58,7 @@ function commands(seed) {
     stepRun(r, held);
   }
   assert.ok(r.gifts.length > 0);
+  assert.ok(r.tickets.length > 0);
   return { inputs, run: r };
 }
 test("real emulator: permissions, replay, idempotent issuance, stock, wallet isolation and redemption", async () => {
@@ -100,6 +101,8 @@ test("real emulator: permissions, replay, idempotent issuance, stock, wallet iso
   const { id, seed } = start.result,
     log = commands(seed);
   await db.doc(`gameRuns/${id}`).update({ created: Date.now() - 100000 });
+  assert.equal((await callable("finishRun", { id, inputs: log.inputs }, a.token)).status, 400);
+  await db.doc(`gameRuns/${id}`).update({ created: Date.now() - (log.run.end / 60 * 1000 + 2000) });
   const [first, retry] = await Promise.all([
     callable("finishRun", { id, inputs: log.inputs, score: 999999 }, a.token),
     callable("finishRun", { id, inputs: log.inputs }, a.token),
@@ -114,7 +117,7 @@ test("real emulator: permissions, replay, idempotent issuance, stock, wallet iso
     secondLog = commands(second.result.seed);
   await db
     .doc(`gameRuns/${second.result.id}`)
-    .update({ created: Date.now() - 100000 });
+    .update({ created: Date.now() - (secondLog.run.end / 60 * 1000 + 2000) });
   const empty = await callable(
     "finishRun",
     { id: second.result.id, inputs: secondLog.inputs },

@@ -24,6 +24,8 @@ import {
   createRun,
   stepRun,
   missions,
+  challenges,
+  difficulty,
   VERSION,
   type Run,
   type Input,
@@ -468,7 +470,7 @@ export function Jogo() {
       state: { escolhas: clothes, personagem: character.id },
     });
   }
-  const naturalStage = Math.min(2, Math.floor(run.tick / 1200)),
+  const naturalStage = difficulty(run),
     stage =
       event.scenery === "auto"
         ? naturalStage
@@ -642,6 +644,7 @@ export function Jogo() {
                 {run.noticeUntil > run.tick ? run.notice : ""}
               </div>
               <div className="run-power">
+                <span>Nível {difficulty(run) + 1}/3</span>
                 {run.tickets.length > 0 && <span>🎟 {run.tickets.length} {session.current ? "a conferir no final" : "· demonstração"}</span>}
                 {run.shield > run.tick && (
                   <span>
@@ -674,7 +677,7 @@ export function Jogo() {
               </h1>
               <p>
                 {event.description ||
-                  "Pule pelos telhados, junte penas e vista as descobertas pelo caminho até o Vital."}
+                  "120 segundos até o Vital. O ritmo aumenta, as plataformas sobem e cada missão abre um novo desafio."}
               </p>
               <div className="run-intro-actions">
                 <button
@@ -872,13 +875,12 @@ export function Jogo() {
             </label>
           )}
           <div className="run-missions">
-            <h3>Pequenas missões</h3>
-            {missions(run)
-              .slice(0, 3)
+            <h3>Missões em sequência</h3>
+            {challenges(run)
               .map((m) => (
                 <div key={m.id}>
                   <span>
-                    {m.name}
+                    {m.name} · Etapa {m.level}/{m.total}
                     <b>
                       {Math.min(m.value, m.target)}/{m.target}
                     </b>

@@ -42,9 +42,16 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/conta-functions.json"
           trap 'rm -f "$GOOGLE_APPLICATION_CREDENTIALS"' EXIT
           node functions/check-deploy.mjs
-          npx -y firebase-tools@15.30.0 functions:artifacts:setpolicy \
-            --location southamerica-east1 --days 7 --force \
-            --project galeriadovital --non-interactive
+          set +e
           npx -y firebase-tools@15.30.0 deploy \
             --only functions:quintal-game \
-            --project galeriadovital --non-interactive
+            --project galeriadovital --non-interactive 2>&1 | tee "$RUNNER_TEMP/functions-deploy.log"
+          deploy_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$deploy_status" -ne 0 ]; then
+            if grep -Fq 'Functions successfully deployed but could not set up cleanup policy' "$RUNNER_TEMP/functions-deploy.log"; then
+              echo '::warning::Functions published successfully. Artifact Registry cleanup policy requires separate configuration.'
+            else
+              exit "$deploy_status"
+            fi
+          fi

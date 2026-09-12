@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createRun, stepRun, replay } from "../engine.mjs";
+import { createRun, stepRun, replay, BASE_TICKS, MAX_TICKS, challenges, difficulty } from "../engine.mjs";
 import {
   validateInputs,
   validateReward,
@@ -118,12 +118,12 @@ test("shield absorbs ink once; immunity prevents repeated damage", () => {
   stepRun(naked, false);
   assert.equal(naked.score, 30);
 });
-test("clock adds three seconds and cannot exceed seventy seconds", () => {
+test("clock adds three seconds and cannot exceed 130 seconds", () => {
   const r = isolate();
-  r.end = 4150;
+  r.end = MAX_TICKS - 50;
   r.things = [thing("clock", 0, 1, 0.8, 0.8)];
   stepRun(r, false);
-  assert.equal(r.end, 4200);
+  assert.equal(r.end, MAX_TICKS);
 });
 test("rejects out of order, repeated, malformed and excessive input", () => {
   for (const input of [
@@ -133,8 +133,8 @@ test("rejects out of order, repeated, malformed and excessive input", () => {
       { tick: 2, held: false },
     ],
     [{ tick: 1, held: "yes" }],
-    [{ tick: 4200, held: true }],
-    Array(1801).fill({ tick: 0, held: true }),
+    [{ tick: MAX_TICKS, held: true }],
+    Array(3601).fill({ tick: 0, held: true }),
   ])
     assert.throws(() => validateInputs(input));
   assert.deepEqual(validateInputs([]), []);
@@ -243,4 +243,36 @@ test("jumping past a coupon does not grant it and magnet cannot collect it", () 
   for (let i = 0; i < 90; i++) stepRun(r, true);
   assert.deepEqual(r.tickets, []);
   assert.equal(ticket.taken, false);
+});
+
+test("run lasts 120 seconds and difficulty rises at 40 and 80 seconds", () => {
+  const r = isolate();
+  assert.equal(r.end, 7200);
+  assert.equal(difficulty(r), 0);
+  r.tick = 2399; stepRun(r, false); assert.equal(difficulty(r), 1);
+  r.tick = 4799; stepRun(r, false); assert.equal(difficulty(r), 2);
+  const result = replay(13, []);
+  assert.ok(result.tick >= BASE_TICKS && result.tick <= MAX_TICKS);
+});
+test("mission completion rewards once and unlocks the next target", () => {
+  const r = isolate(); r.feathers = 9;
+  r.things = [thing("feather", 0.08, 0.2)];
+  stepRun(r, false);
+  assert.equal(r.score, 85);
+  assert.equal(challenges(r)[0].target, 25);
+  assert.equal(challenges(r)[0].level, 2);
+  stepRun(r, false); assert.equal(r.score, 85);
+});
+test("repeated contact with the same platform does not farm missions", () => {
+  const r = isolate(); r.y = 1.5; r.vy = -4; r.ground = false;
+  r.things = [thing("platform", 0, 1.1, 4, 0.35)];
+  for (let i = 0; i < 8; i++) stepRun(r, false);
+  assert.deepEqual(r.platforms, [1]);
+});
+test("later sections generate ascending platform sequences", () => {
+  const r = isolate(); r.tick = 2500; r.x = 40; r.next = 50;
+  stepRun(r, false);
+  const platforms = r.things.filter(o => o.kind === "platform");
+  assert.ok(platforms.length >= 3);
+  assert.ok(platforms.some(o => o.y > 3));
 });

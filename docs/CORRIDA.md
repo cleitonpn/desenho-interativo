@@ -8,7 +8,7 @@
 - Silhueta opaca calculada apenas sob o corpo: o cenário não atravessa a galinha. Aberturas de capuzes, óculos e outros acessórios preservam a transparência original e deixam o rosto visível. O preenchimento acompanha as pernas animadas e o cartão compartilhável; os PNGs originais e a exportação normal do editor permanecem intactos.
 - Penas, caixas de acessórios, caixas surpresa, plataformas, rotas de coleta em alturas diferentes, poças, minhocas e combos. Ao abrir uma caixa, a peça voa sete unidades à frente e cai no chão. Passar por ela veste; pular por cima mantém o visual. Durante o voo ela não equipa, e o ímã só atrai penas. A coleção registra apenas peças recolhidas; a abertura continua contando para pontos, missões e elegibilidade de cupons.
 - Minhocas entram pela direita, olham para a esquerda e só começam a andar ao se aproximarem do jogador. A colisão de pisada exige descida pelo topo e produz um novo salto.
-- Escudo, ímã e bônus de três segundos, com corrida limitada a 70 segundos. Dificuldade aumenta gradualmente.
+- Escudo, ímã e bônus de três segundos, com corrida de 120 segundos, limitada a 130 segundos com bônus. Dificuldade aumenta gradualmente.
 - Missões, desafio diário com percurso compartilhado, objetivo semanal, recorde, histórico local, álbum e conquistas. Ao chegar, o personagem pode ser aberto no editor ou exportado em um cartão de imagem; o compartilhamento nativo usa um arquivo quando suportado, com download como alternativa.
 - Corridas premiadas autenticadas e ranking semanal validado pelo servidor. Apelidos públicos automáticos evitam expor nomes e contatos do cadastro.
 - Cupons percentuais, valores em reais, brindes e outros benefícios. Carteira com validade, situação e link para abrir uma mensagem no WhatsApp do Vital. O jogador conclui o envio; o sistema não envia mensagens automaticamente.
@@ -98,4 +98,8 @@ As regras e índices do Firestore são publicados pelo workflow separado. O Stor
 
 Caixas vermelhas soltam também um bilhete de cupom surpresa, separado do acessório. O jogador precisa encostar no bilhete após a queda para coletá-lo. Abrir a caixa sem pegar o bilhete não concede chance de benefício. O contador acompanha a coleta; no modo livre os bilhetes são demonstração. Nas corridas por benefícios, o replay do servidor confirma a coleta e aplica a chance por bilhete, estoque e condições da campanha. O cupom comercial é emitido apenas no final, no máximo um por partida.
 
-O workflow configura retenção de sete dias para imagens de build das funções no Artifact Registry de southamerica-east1. Isso não apaga as funções nem os dados do jogo.
+O workflow distingue sucesso das funções com aviso de limpeza do Artifact Registry de falhas reais de deploy. A política de retenção das imagens fica pendente de configuração no projeto.
+
+## Dificuldade e missões
+
+A corrida dura 120 segundos, com relógios acrescentando até dez segundos. Aos 40 e 80 segundos, sobe o nível: surgem escadas de três e quatro plataformas, tinta sob os saltos e caixas elevadas. A velocidade aumenta gradualmente de 5,1 até 8,1 unidades por segundo. Missões de penas, plataformas, minhocas e caixas têm quatro etapas; cada etapa concede 75 pontos e libera o objetivo seguinte. As condições comerciais já existentes conservam suas metas originais, independentes dessas missões progressivas.

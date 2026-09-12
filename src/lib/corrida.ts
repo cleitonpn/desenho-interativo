@@ -1,6 +1,9 @@
 /** Fixed-step simulation shared by the browser and the reward server. No browser APIs. */
-export const VERSION = 3;
+export const VERSION = 4;
 export const FPS = 60;
+export const BASE_TICKS = 120 * FPS;
+export const MAX_TICKS = 130 * FPS;
+export const difficulty = (r: Run) => Math.min(2, Math.floor(r.tick / (40 * FPS)));
 export type Kind =
   | "box"
   | "worm"
@@ -55,6 +58,7 @@ export type Run = {
   gifts: number[];
   items: number[];
   tickets: number[];
+  platforms: number[];
   notice: string;
   noticeUntil: number;
   effects: { x: number; y: number; until: number }[];
@@ -63,7 +67,7 @@ export function createRun(seed: number): Run {
   const r: Run = {
     seed,
     tick: 0,
-    end: 3600,
+    end: BASE_TICKS,
     x: 0,
     y: 0,
     vy: 0,
@@ -87,6 +91,7 @@ export function createRun(seed: number): Run {
     gifts: [],
     items: [],
     tickets: [],
+    platforms: [],
     notice: "Toque para pular. Segure para ir mais alto.",
     noticeUntil: 300,
     effects: [],
@@ -106,6 +111,21 @@ function generate(r: Run) {
     const x = r.next,
       section = Math.floor(x / 16),
       pattern = section % 7;
+    const level = difficulty(r);
+    if (level > 0 && (pattern === 3 || pattern === 5)) {
+      // Reachable staircases: 1.1-unit rises and clear jump gaps.
+      const count = level === 1 ? 3 : 4;
+      for (let i = 0; i < count; i++) {
+        const height = 1 + (i % 3) * 1.1;
+        add(r, "platform", x + i * 5, height, level === 1 ? 3.6 : 3, 0.35);
+        add(r, "feather", x + i * 5, height + 1.2, 0.45, 0.6);
+      }
+      add(r, "ink", x + 5, 0, count * 2, 0.28);
+      const last = count - 1;
+      add(r, "gift", x + last * 5, 1 + (last % 3) * 1.1 + 2.8, 1.3, 1);
+      r.next += count * 5 + 14;
+      continue;
+    }
     if (pattern === 0 || pattern === 1) {
       add(r, section % 5 === 1 ? "gift" : "box", x, 3.5, 1.3, 1);
       for (let i = 0; i < 5; i++)
@@ -138,7 +158,12 @@ function generate(r: Run) {
       add(r, "worm", x + 7, 0, 1.2, 0.5);
       add(r, "box", x + 11, 3.5, 1.3, 1);
     }
-    r.next += 16 + random(r) * 2;
+    if (level > 0 && (pattern === 0 || pattern === 1)) {
+      // A low landing before the next box adds a timing decision.
+      add(r, "platform", x + 12, 0.9 + level * 0.3, 2.8, 0.35);
+      add(r, "ink", x + 12, 0, level === 2 ? 4 : 3, 0.28);
+    }
+    r.next += (level === 2 ? 14.5 : 16) + random(r) * 2;
   }
 }
 function feedback(r: Run, text: string, x = r.x, y = r.y + 1) {
@@ -148,9 +173,11 @@ function feedback(r: Run, text: string, x = r.x, y = r.y + 1) {
 }
 export function stepRun(r: Run, held: boolean): void {
   if (r.tick >= r.end) return;
+  const previousChallenges = completedChallenges(r);
+  const previousLevel = difficulty(r);
   r.tick++;
   const dt = 1 / FPS,
-    speed = 5.1 + Math.min(r.tick / 3600, 1) * 1.1;
+    speed = 5.1 + Math.min(r.tick / BASE_TICKS, 1) * 3;
   if (held && !r.held) r.buffer = 9;
   r.held = held;
   if (r.buffer > 0 && r.ground) {
@@ -188,6 +215,7 @@ export function stepRun(r: Run, held: boolean): void {
     if (o.kind === "platform") {
       const top = o.y + o.h;
       if (near && r.vy <= 0 && oldY >= top - 0.04 && r.y <= top) {
+        if (!r.platforms.includes(o.id)) r.platforms.push(o.id);
         r.y = top;
         r.vy = 0;
         r.ground = true;
@@ -278,7 +306,7 @@ export function stepRun(r: Run, held: boolean): void {
       feedback(r, "Ímã de penas por 10 segundos");
     }
     if (o.kind === "clock") {
-      r.end = Math.min(4200, r.end + 180);
+      r.end = Math.min(MAX_TICKS, r.end + 180);
       feedback(r, "Mais 3 segundos!");
     }
   }
@@ -286,6 +314,14 @@ export function stepRun(r: Run, held: boolean): void {
   r.things = r.things.filter((o) => o.x > r.x - 12);
   r.effects = r.effects.filter((p) => p.until > r.tick);
   generate(r);
+  const earned = completedChallenges(r) - previousChallenges;
+  if (earned > 0) {
+    r.score += earned * 75;
+    feedback(r, `Missão concluída! +${earned * 75} · Próximo desafio liberado`);
+  } else if (difficulty(r) > previousLevel) {
+    feedback(r, difficulty(r) === 1 ? "Nível 2 · Hora de subir nas plataformas!" : "Nível 3 · Reta final: ritmo acelerado!");
+    r.noticeUntil = r.tick + 180;
+  }
 }
 export function replay(seed: number, inputs: Input[]): Run {
   const r = createRun(seed);
@@ -309,4 +345,23 @@ export function missions(r: Run) {
       target: 1,
     },
   ];
+}
+
+const LADDER = [
+  {id: "penas", label: "Colete penas", targets: [10, 25, 50, 80], value: (r: Run) => r.feathers},
+  {id: "saltos", label: "Pouse em plataformas", targets: [3, 8, 15, 22], value: (r: Run) => r.platforms.length},
+  {id: "minhocas", label: "Pise em minhocas", targets: [2, 5, 9, 14], value: (r: Run) => r.worms},
+  {id: "caixas", label: "Abra caixas", targets: [3, 7, 12, 18], value: (r: Run) => r.boxes},
+];
+export function challenges(r: Run) {
+  return LADDER.map(m => {
+    const value = m.value(r);
+    const completed = m.targets.filter(t => value >= t).length;
+    return {id: m.id, name: m.label, value, completed, total: m.targets.length,
+      level: Math.min(completed + 1, m.targets.length),
+      target: m.targets[Math.min(completed, m.targets.length - 1)]};
+  });
+}
+function completedChallenges(r: Run) {
+  return challenges(r).reduce((sum, m) => sum + m.completed, 0);
 }

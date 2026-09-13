@@ -403,7 +403,7 @@ export function AbaJogo() {
           <article className="moldura-sutil p-5 space-y-2" key={r.id}>
             <div className="flex justify-between">
               <Gift size={20} />
-              <span className="text-xs">{r.active ? "ATIVA" : "PAUSADA"}</span>
+              <span className="text-xs">{!r.active ? "PAUSADA" : r.ends && r.ends <= Date.now() ? "ENCERRADA" : r.starts > Date.now() ? "AGENDADA" : r.issued >= r.stock ? "ESGOTADA" : "ATIVA"}</span>
             </div>
             <h3 className="font-bold">{r.name}</h3>
             <p className="text-sm text-muted">{r.description}</p>

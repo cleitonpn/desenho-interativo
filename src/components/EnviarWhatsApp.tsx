@@ -15,10 +15,11 @@ interface Props {
   personagem: Personagem
   escolhas: Escolhas
   cor: CorId
+  contexto?: string
   aoFechar: () => void
 }
 
-export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
+export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar, contexto }: Props) {
   const { usuario } = useAuth()
   const [previa, setPrevia] = useState<string | null>(null)
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
@@ -46,11 +47,11 @@ export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
       registrarAcao('whatsapp')
       registrarConjunto(escolhas, 'levadas')
       void registrarMarco(usuario.uid, 'enviadas')
-      window.open(linkWhatsApp(itens, CORES[cor].rotulo, personagem.nome, url), '_blank')
+      window.location.assign(linkWhatsApp(itens, CORES[cor].rotulo, personagem.nome, url, contexto))
     } catch {
       // Se o upload falhar, ainda vale abrir a conversa só com o texto.
       setErro('Não consegui subir a imagem. Vou abrir o WhatsApp só com o texto — anexe a imagem baixada.')
-      window.open(linkWhatsApp(itens, CORES[cor].rotulo, personagem.nome), '_blank')
+      window.location.assign(linkWhatsApp(itens, CORES[cor].rotulo, personagem.nome, undefined, contexto))
     } finally {
       setOcupado(false)
     }
@@ -63,7 +64,7 @@ export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
     const arquivo = new File([blob], 'meu-desenho.png', { type: 'image/png' })
     if (!podeCompartilharArquivo(arquivo)) { baixarCanvas(canvas, 'meu-desenho.png'); return }
     try {
-      await navigator.share({ files: [arquivo], text: `${personagem.nome}: ${itens.join(', ')}` })
+      await navigator.share({ files: [arquivo], text: `${personagem.nome}: ${itens.join(', ')}. ${contexto || ''}` })
       registrarAcao('compartilhamento')
       registrarConjunto(escolhas, 'levadas')
     } catch { /* cancelado pela pessoa */ }
@@ -90,6 +91,7 @@ export function EnviarWhatsApp({ personagem, escolhas, cor, aoFechar }: Props) {
             </p>
           </div>
 
+          {contexto && <p className="text-sm whitespace-pre-line">{contexto}</p>}
           {erro && <p className="text-brand text-sm">{erro}</p>}
 
           <div className="space-y-2 pt-1">

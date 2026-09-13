@@ -6,7 +6,8 @@ import { carregarSobre, type Sobre as SobreDados } from '../lib/conteudo'
 
 export function Sobre() {
   const [dados, setDados] = useState<SobreDados | null>(null)
-  useEffect(() => { carregarSobre().then(setDados).catch(() => setDados(null)) }, [])
+  const [erro, setErro] = useState(false)
+  useEffect(() => { carregarSobre().then(d => { setDados(d); if (!d) setErro(true) }).catch(() => setErro(true)) }, [])
 
   return (
     <div className="min-h-dvh px-5 py-6 safe-top safe-bottom">
@@ -19,7 +20,7 @@ export function Sobre() {
         <h1 className="font-display text-4xl mt-1.5 mb-6">Vital Monteiro</h1>
 
         {!dados ? (
-          <div className="grid place-items-center py-16 text-muted"><Loader2 className="animate-spin" /></div>
+          <div className="grid place-items-center py-16 text-muted">{erro ? <p>A apresentação não está disponível agora. Conheça o trabalho do Vital pelo Instagram abaixo.</p> : <Loader2 className="animate-spin" />}</div>
         ) : (
           <>
             {dados.fotos.length > 0 && (

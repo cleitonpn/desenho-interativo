@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Check, Loader2, LogOut, MailCheck, RefreshCw } from 'lucide-react'
 import { MARCA } from '../config/marca'
 import { useAuth } from '../contexts/AuthContext'
@@ -13,6 +13,8 @@ import { useAuth } from '../contexts/AuthContext'
  */
 export function VerificarEmail() {
   const navegar = useNavigate()
+  const local = useLocation()
+  const destino = typeof local.state?.destino === "string" && /^\/(?!\/)/.test(local.state.destino) ? local.state.destino : "/tutorial"
   const { usuario, reenviarVerificacao, conferirVerificacao, sair } = useAuth()
   const [conferindo, setConferindo] = useState(false)
   const [reenviando, setReenviando] = useState(false)
@@ -29,16 +31,16 @@ export function VerificarEmail() {
     timer.current = setInterval(async () => {
       if (await conferirVerificacao()) {
         if (timer.current) clearInterval(timer.current)
-        navegar('/tutorial', { replace: true })
+        navegar(destino, { replace: true })
       }
     }, 4000)
     return () => { if (timer.current) clearInterval(timer.current) }
-  }, [conferirVerificacao, navegar])
+  }, [conferirVerificacao, navegar, destino])
 
   async function conferirAgora() {
     setConferindo(true); setAviso('')
     try {
-      if (await conferirVerificacao()) navegar('/tutorial', { replace: true })
+      if (await conferirVerificacao()) navegar(destino, { replace: true })
       else setAviso('Ainda não chegou a confirmação. Veja também a caixa de spam.')
     } finally {
       setConferindo(false)

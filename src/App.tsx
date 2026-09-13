@@ -14,6 +14,11 @@ import { Conta } from './pages/Conta'
 import { Privacidade } from './pages/Privacidade'
 import { Sobre } from './pages/Sobre'
 import { Tattoos } from './pages/Tattoos'
+import { GaleriaLayout } from './components/GaleriaLayout'
+const JogoBicho = lazy(() => import('./pages/JogoBicho').then(m => ({ default: m.JogoBicho })))
+const Produto = lazy(() => import('./pages/Produto').then(m => ({ default: m.Produto })))
+const Pedidos = lazy(() => import('./pages/Pedidos').then(m => ({ default: m.Pedidos })))
+const Encomendar = lazy(() => import('./pages/Encomendar').then(m => ({ default: m.Encomendar })))
 import { Loja } from './pages/Loja'
 const Jogo = lazy(() => import('./pages/Jogo').then(m => ({ default: m.Jogo })))
 
@@ -36,8 +41,12 @@ export default function App() {
   return (
     <AuthProvider>
       <FiltrosSvg />
-      <Routes>
+      <GaleriaLayout><Suspense fallback={<Espera />}><Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/jogo-bicho" element={<JogoBicho />} />
+        <Route path="/loja/:id" element={<Produto />} />
+        <Route path="/pedidos" element={<Protegida><Pedidos /></Protegida>} />
+        <Route path="/encomendar" element={<Encomendar />} />
         <Route path="/loja" element={<Loja />} />
         <Route path="/jogo" element={<Suspense fallback={<Espera />}><Jogo /></Suspense>} />
         <Route path="/tattoos" element={<Tattoos />} />
@@ -57,7 +66,7 @@ export default function App() {
         } />
 
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      </Routes></Suspense></GaleriaLayout>
     </AuthProvider>
   )
 }
@@ -73,40 +82,46 @@ function Protegida({ children }: { children: ReactNode }) {
   if (carregando) return <Espera />
   // Guarda de onde a pessoa veio: depois de entrar ela volta para cá, em vez
   // de cair na home e ter de achar o caminho de novo.
-  if (!usuario) return <Navigate to="/entrar" replace state={{ destino: local.pathname }} />
+  if (!usuario) return <Navigate to="/entrar" replace state={{ destino: local.pathname + local.search }} />
   // Entrar pelo Google autentica sem criar perfil: o Google devolve só nome e
   // e-mail. Sem esta parada, o Vital ficaria com um cadastro pela metade.
-  if (!perfil) return <Navigate to="/completar" replace />
+  if (!perfil) return <Navigate to="/completar" replace state={{ destino: local.pathname }} />
   // Conta por e-mail e senha aceita qualquer texto com @: sem confirmar, o
   // mailing enche de endereço que não existe. O Google já confirma o dele.
-  if (temSenha && !emailVerificado) return <Navigate to="/verificar" replace />
+  if (temSenha && !emailVerificado) return <Navigate to="/verificar" replace state={{ destino: local.pathname }} />
   return <>{children}</>
 }
 
 /** A tela de completar cadastro é o único lugar que aceita conta sem perfil. */
 function PrecisaPerfil() {
+  const local = useLocation()
+  const destino = typeof local.state?.destino === "string" && /^\/(?!\/)/.test(local.state.destino) ? local.state.destino : "/montar"
   const { usuario, perfil, carregando } = useAuth()
   if (carregando) return <Espera />
   if (!usuario) return <Navigate to="/" replace />
-  if (perfil) return <Navigate to="/montar" replace />
+  if (perfil) return <Navigate to={destino} replace />
   return <CompletarCadastro />
 }
 
 /** Idem para o e-mail ainda não confirmado. */
 function PrecisaVerificar() {
+  const local = useLocation()
+  const destino = typeof local.state?.destino === "string" && /^\/(?!\/)/.test(local.state.destino) ? local.state.destino : "/montar"
   const { usuario, carregando, emailVerificado, temSenha } = useAuth()
   if (carregando) return <Espera />
   if (!usuario) return <Navigate to="/" replace />
-  if (emailVerificado || !temSenha) return <Navigate to="/montar" replace />
+  if (emailVerificado || !temSenha) return <Navigate to={destino} replace />
   return <VerificarEmail />
 }
 
 /** Quem já entrou não precisa do formulário de login. */
 function SoVisitante({ children }: { children: ReactNode }) {
+  const local = useLocation()
+  const destino = typeof local.state?.destino === "string" && /^\/(?!\/)/.test(local.state.destino) ? local.state.destino : "/montar"
   const { usuario, perfil, carregando, emailVerificado, temSenha } = useAuth()
   if (carregando) return <Espera />
   if (!usuario) return <>{children}</>
-  if (!perfil) return <Navigate to="/completar" replace />
-  if (temSenha && !emailVerificado) return <Navigate to="/verificar" replace />
-  return <Navigate to="/" replace />
+  if (!perfil) return <Navigate to="/completar" replace state={{ destino }} />
+  if (temSenha && !emailVerificado) return <Navigate to="/verificar" replace state={{ destino }} />
+  return <Navigate to={destino} replace />
 }

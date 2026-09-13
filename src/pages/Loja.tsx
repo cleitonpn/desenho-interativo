@@ -9,12 +9,15 @@ export function Loja() {
   // Quem chega do editor traz a criação junto: a loja abre já sabendo o que
   // vai na peça, em vez de mandar a pessoa montar tudo de novo.
   const vindo = useLocation().state as { arte?: Arte; personagem?: string } | null
+  const [erro, setErro] = useState('')
+  const [filtro, setFiltro] = useState('')
   const [produtos, setProdutos] = useState<Produto[] | null>(null)
 
   useEffect(() => {
+    if (vindo?.arte) { try { sessionStorage.setItem("vital-arte-produto", JSON.stringify(vindo)) } catch { /* Optional persistence. */ } }
     getDocs(query(collection(db, 'produtos'), where('ativo', '==', true)))
       .then((s) => setProdutos(s.docs.map((d) => ({ id: d.id, ...d.data() } as Produto))))
-      .catch(() => setProdutos([]))
+      .catch(() => { setErro('Não foi possível carregar a loja. Atualize para tentar novamente.'); setProdutos([]) })
   }, [])
 
   const categorias = [...new Set((produtos ?? []).map((p) => p.categoria))].sort()
@@ -38,15 +41,16 @@ export function Loja() {
           </p>
         )}
 
+        <label className="block mb-6 max-w-xs">Categoria<select className="campo" value={filtro} onChange={e => setFiltro(e.target.value)}><option value="">Todas as peças</option>{categorias.map(c => <option key={c}>{c}</option>)}</select></label>
         {!produtos ? (
           <div className="grid place-items-center py-20 text-muted"><Loader2 className="animate-spin" /></div>
         ) : produtos.length === 0 ? (
           <div className="moldura-sutil p-8 text-center">
-            <p className="text-muted">A loja ainda está sendo montada.</p>
+            <p className="text-muted">{erro || 'Novas peças estão chegando ao ateliê. Conheça os desenhos enquanto isso.'}</p>
             <Link to="/montar" className="botao-principal mt-5">Enquanto isso, monte um bicho</Link>
           </div>
         ) : (
-          categorias.map((cat) => (
+          categorias.filter(cat => !filtro || cat === filtro).map((cat) => (
             <section key={cat} className="mb-9">
               <h2 className="etiqueta mb-3">{cat}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -57,7 +61,7 @@ export function Loja() {
                     <div className="papel rounded aspect-square grid place-items-center overflow-hidden">
                       {p.fotos[0]
                         ? <img src={p.fotos[0]} alt={p.nome} loading="lazy" className="w-full h-full object-cover" />
-                        : <span className="text-4xl">🐔</span>}
+                        : <span className="font-display text-4xl text-brand">✳</span>}
                     </div>
                     <p className="font-semibold text-sm mt-2.5 leading-tight">{p.nome}</p>
                     <p className="etiqueta mt-1">{TIPOS_ROTULO[p.tipo].rotulo}</p>

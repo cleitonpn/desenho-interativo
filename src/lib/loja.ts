@@ -53,6 +53,9 @@ export type TipoProduto =
   | 'flash'
 
 export interface Produto {
+  modelo?: 'camiseta' | 'caneca' | 'outro'
+  opcoes?: { nome: string; valores: string[] }[]
+  prazoProducao?: string
   id: string
   nome: string
   descricao: string
@@ -128,6 +131,7 @@ export type Arte =
   | { tipo: 'pronta'; arteId: string; arquivo: string; nome: string }
 
 export interface Frete {
+  retirada?: boolean
   id: string
   regiao: string
   precoCentavos: number

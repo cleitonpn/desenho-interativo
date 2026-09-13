@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Flame, Gamepad2, Images, Instagram, Palette, ShoppingBag, Sparkle, UserRound,
+  Flame, Gamepad2, Images, Palette, ShoppingBag, Sparkle, UserRound,
 } from 'lucide-react'
 import { MARCA } from '../config/marca'
 import { Desenho } from '../components/Desenho'
@@ -52,22 +52,7 @@ export function Home() {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="safe-top px-5 lg:px-10 pt-5 flex items-center justify-between">
-        <span className="font-display text-xl tracking-tight">{MARCA.nome}</span>
-        <div className="flex items-center gap-2">
-          <a href={MARCA.instagram} target="_blank" rel="noreferrer"
-             className="text-muted hover:text-brand transition-colors p-2" aria-label="Instagram do Vital">
-            <Instagram size={20} />
-          </a>
-          {usuario ? (
-            <Link to="/conta" className="botao-neutro !px-3 !py-2" aria-label="Minha conta">
-              <UserRound size={18} />
-            </Link>
-          ) : (
-            <Link to="/entrar" className="botao-neutro !px-4 !py-2 text-sm">Entrar</Link>
-          )}
-        </div>
-      </header>
+
 
       {/* No celular tudo empilha; no desktop a coluna estreita deixaria dois
           terços da tela vazios, então o conteúdo se espalha em três colunas. */}
@@ -83,11 +68,10 @@ export function Home() {
           <div className="text-center py-8">
             <p className="etiqueta">{MARCA.chamada}</p>
             <h1 className="font-display text-[12vw] leading-[0.85] sm:text-6xl lg:text-7xl mt-3">
-              Tudo que o Vital <span className="text-brand">desenha</span>
+              Uma galeria.<br /><span className="text-brand">Mil ideias.</span>
             </h1>
             <p className="mt-5 text-muted leading-relaxed max-w-sm lg:max-w-lg mx-auto lg:text-lg">
-              {MARCA.oQueTem} E um bicho para você montar do seu jeito, peça por
-              peça, e levar pronto para tatuar.
+              {MARCA.oQueTem} Crie um personagem, descubra referências e transforme sua ideia em uma tattoo ou em um produto do ateliê.
             </p>
           </div>
         )}
@@ -118,10 +102,11 @@ export function Home() {
         <nav className="grid grid-cols-2 gap-3 mt-4">
           <Atalho para="/montar" destaque icone={<Palette size={22} />} grande
                   titulo="Montar" texto={usuario ? 'Escolha o bicho e os acessórios' : 'Entre e monte o seu'} />
+          <Atalho para="/jogo-bicho" icone={<Sparkle size={20} />} titulo="Jogo do Bicho" texto="Deixe o acaso desenhar a ideia" />
           <Atalho para="/jogo" icone={<Gamepad2 size={20} />}
                   titulo="Corrida" texto="Ganhe acessórios pulando" />
           <Atalho para="/loja" icone={<ShoppingBag size={20} />}
-                  titulo="Loja" texto="Camisetas e cerâmicas" />
+                  titulo="Loja" texto="Arte para vestir e levar" />
           <Atalho para="/tattoos" icone={<Flame size={20} />}
                   titulo="Tattoos" texto="Trabalhos do Vital" />
           {usuario && (

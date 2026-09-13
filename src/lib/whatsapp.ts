@@ -6,7 +6,7 @@ import { MARCA } from '../config/marca'
  * manda o arquivo de verdade junto.
  */
 export function linkWhatsApp(
-  itens: string[], cor: string, personagem: string, urlImagem?: string,
+  itens: string[], cor: string, personagem: string, urlImagem?: string, contexto?: string,
 ): string {
   const linhas = [
     `Oi Vital! Montei ${artigo(personagem)} ${personagem.toLowerCase()} no ${MARCA.nomeCompleto}`,
@@ -14,6 +14,7 @@ export function linkWhatsApp(
     itens.length ? `Acessórios: ${itens.join(', ')}.` : 'Deixei ela sem acessório nenhum.',
     `Versão: ${cor}.`,
   ]
+  if (contexto) linhas.push('', contexto)
   if (urlImagem) linhas.push('', `Imagem: ${urlImagem}`)
   return `https://wa.me/${MARCA.whatsapp}?text=${encodeURIComponent(linhas.join('\n'))}`
 }

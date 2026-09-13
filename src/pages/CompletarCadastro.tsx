@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Loader2, LogOut } from 'lucide-react'
 import { MARCA } from '../config/marca'
 import { CamposDoCadastro } from '../components/CamposDoCadastro'
@@ -15,6 +15,8 @@ const VAZIO: DadosCadastro = { nome: '', whatsapp: '', cidade: '', nascimento: '
  */
 export function CompletarCadastro() {
   const navegar = useNavigate()
+  const local = useLocation()
+  const destino = typeof local.state?.destino === "string" && /^\/(?!\/)/.test(local.state.destino) ? local.state.destino : "/tutorial"
   const { usuario, completarPerfil, sair } = useAuth()
   const [dados, setDados] = useState<DadosCadastro>({
     ...VAZIO,
@@ -29,7 +31,7 @@ export function CompletarCadastro() {
     setOcupado(true); setErro('')
     try {
       await completarPerfil(dados)
-      navegar('/tutorial', { replace: true })
+      navegar(destino, { replace: true })
     } catch {
       setErro('Não consegui salvar agora. Tente de novo.')
       setOcupado(false)

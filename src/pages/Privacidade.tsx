@@ -20,7 +20,7 @@ export function Privacidade() {
           <h1 className="font-display text-4xl mt-2">Privacidade</h1>
           <p className="text-muted mt-3 leading-relaxed">
             Em resumo: pedimos seus dados para o Vital saber com quem está falando
-            e conseguir te achar depois. Nada é vendido nem repassado para ninguém.
+            e atender suas criações e pedidos. Não vendemos seus dados. Usamos Firebase e Mercado Pago para operar o serviço e processar pagamentos.
           </p>
         </header>
 
@@ -33,6 +33,10 @@ export function Privacidade() {
             decidir o que desenhar; ninguém abre a sua sessão para ver o que você fez.</p>
         </Secao>
 
+        <Secao titulo="Pedidos e pagamentos">
+          <p>Para compras, guardamos o produto, suas opções, desenho, endereço de entrega, contato e situação do pedido. O Mercado Pago recebe os dados necessários ao checkout, como e-mail, itens e valor. Os dados do cartão são informados diretamente no Mercado Pago.</p>
+          <p>No Jogo do Bicho, as referências salvas ficam neste navegador e no arquivo que você baixa. Ao escolher compartilhar pelo WhatsApp, você decide enviar as referências ao Vital.</p>
+        </Secao>
         <Secao titulo="Para que serve">
           <p>Seu <strong>nome e WhatsApp</strong> são como o Vital responde quando você
             manda um desenho para tatuar.</p>
@@ -59,8 +63,7 @@ export function Privacidade() {
 
         <Secao titulo="Apagar tudo">
           <p>Você pode apagar sua conta a qualquer momento, na tela
-            <strong> Minha conta</strong>. Isso apaga seu cadastro e todos os desenhos
-            que você salvou, de vez — não fica cópia.</p>
+            <strong> Minha conta</strong>. Você também pode solicitar a exclusão dos seus dados ao Vital. Registros de pedidos e pagamentos podem precisar ser conservados para obrigações legais e atendimento de transações.</p>
         </Secao>
 
         <Secao titulo="Falar com a gente">

@@ -11,7 +11,7 @@ import {
   caminhoDaPeca, carregarCatalogo, pecasDoSlot, personagemPadrao,
   personagensVisiveis, slotsDisponiveis,
 } from '../lib/catalogo'
-import { contarPecas, sortear } from '../lib/composicao'
+import { contarPecas, descrever, sortear } from '../lib/composicao'
 import { resgatarPartida } from '../lib/jogo'
 import { preAquecer } from '../lib/exportar'
 import { salvarCriacao } from '../lib/criacoes'
@@ -187,12 +187,13 @@ export function Editor() {
           <Dices size={18} /> <span className="hidden min-[480px]:inline">Sortear</span>
         </button>
 
-        <AcaoIcone rotulo="Ver numa camiseta" desabilitado={total === 0}
+        <AcaoIcone rotulo="Transformar em produto" desabilitado={total === 0}
                    onClick={() => navegar('/loja', {
                      state: { arte: { tipo: 'galinha', escolhas, cor }, personagem: personagem.id },
                    })}>
           <Shirt size={18} />
         </AcaoIcone>
+        <AcaoIcone rotulo="Agendar tattoo" onClick={() => navegar('/encomendar', { state: { referencia: `${personagem.nome}: ${descrever(personagem, escolhas).join(', ')}. Cor: ${cor}.`, arte: { tipo: 'galinha', escolhas, cor }, personagem: personagem.id } })}><Send size={18} /></AcaoIcone>
         <AcaoIcone rotulo="Ver na pele" desabilitado={total === 0}
                    onClick={() => {
                      registrarAcao('prova_pele')

@@ -28,6 +28,12 @@ async function admin(req) {
 }
 const bad = (e) => new HttpsError("invalid-argument", e.message);
 
+export const listGameOffers = onCall(options, async () => {
+  const now = Date.now();
+  const snap = await db.collection('gameRewards').where('active', '==', true).get();
+  return snap.docs.map(d => d.data()).filter(r => r.starts <= now && (!r.ends || r.ends > now) && r.issued < r.stock).map(r => ({ name: r.name, ends: r.ends, terms: r.terms }));
+});
+
 export const beginRun = onCall(options, async (req) => {
   const user = uid(req),
     now = Date.now(),
@@ -250,3 +256,5 @@ export const redeemGameCoupon = onCall(options, async (req) => {
     return { ...coupon, usedAt };
   });
 });
+
+export { createCheckout, mercadoPagoWebhook, listShopOrders, updateShopOrder } from './shop.mjs';

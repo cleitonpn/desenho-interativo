@@ -16,12 +16,14 @@ import { NovoPersonagem } from '../../components/NovoPersonagem'
 import { AbaGente } from './AbaGente'
 import { AbaEstudio } from './AbaEstudio'
 import { AbaLoja } from './AbaLoja'
+import { Pedidos } from '../Pedidos'
+import { AbaBicho } from './AbaBicho'
 import { AbaJogo } from './AbaJogo'
 import { useAuth } from '../../contexts/AuthContext'
 import { CORES } from '../../config/marca'
 import type { Catalogo, Criacao, Peca, Perfil, SlotId } from '../../lib/tipos'
 
-type Aba = 'gente' | 'loja' | 'estudio' | 'mailing' | 'criacoes' | 'pecas' | 'jogo'
+type Aba = 'gente' | 'loja' | 'estudio' | 'mailing' | 'criacoes' | 'pecas' | 'jogo' | 'bicho' | 'pedidos'
 
 /**
  * Painel do Vital. Três coisas que ele precisa ver sozinho: quem se cadastrou
@@ -55,7 +57,7 @@ export function Admin() {
       <h1 className="font-display text-3xl mt-5">Painel do Vital</h1>
 
       <div className="flex gap-2 mt-5 mb-6 overflow-x-auto">
-        {([['gente', 'A galera'], ['jogo', 'Jogo & benefícios'], ['loja', 'Loja'], ['estudio', 'Estúdio'],
+        {([['gente', 'A galera'], ['jogo', 'Jogo & benefícios'], ['bicho', 'Jogo do Bicho'], ['loja', 'Loja'], ['pedidos', 'Pedidos'], ['estudio', 'Estúdio'],
            ['mailing', 'Mailing'], ['criacoes', 'Criações'],
            ['pecas', 'Peças']] as const).map(([id, rotulo]) => (
           <button key={id} onClick={() => setAba(id)}
@@ -68,7 +70,9 @@ export function Admin() {
 
       {aba === 'gente' && <AbaGente catalogo={catalogo} />}
       {aba === 'jogo' && <AbaJogo />}
+      {aba === 'bicho' && <AbaBicho />}
       {aba === 'loja' && <AbaLoja />}
+      {aba === 'pedidos' && <Pedidos admin />}
       {aba === 'estudio' && <AbaEstudio />}
       {aba === 'mailing' && <AbaMailing perfis={perfis} />}
       {aba === 'criacoes' && <AbaCriacoes criacoes={criacoes} catalogo={catalogo} />}

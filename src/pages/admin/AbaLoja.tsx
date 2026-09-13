@@ -120,8 +120,11 @@ function Editor({ produto, categorias, aoFechar, aoSalvar }: {
     try {
       // O preço é digitado em reais e guardado em centavos: dinheiro em número
       // quebrado acumula erro de arredondamento a cada conta.
-      const centavos = Math.round(Number(preco.replace(/\./g, '').replace(',', '.')) * 100)
-      await salvarProduto({ ...p, precoCentavos: Number.isFinite(centavos) ? centavos : 0 })
+      const centavos = Math.round(Number(preco.includes(',') ? preco.replace(/\./g, '').replace(',', '.') : preco) * 100)
+      if (!Number.isSafeInteger(centavos) || centavos < 0) { setErro('Informe um preço válido.'); setOcupado(false); return }
+      if (p.estoque != null && (!Number.isInteger(p.estoque) || p.estoque < 0)) { setErro('O estoque deve ser um número inteiro positivo ou zero.'); setOcupado(false); return }
+      if (p.opcoes?.some(o => !o.nome || !o.valores.length) || new Set(p.opcoes?.map(o => o.nome)).size !== (p.opcoes?.length || 0)) { setErro('Cada opção extra precisa de nome único e valores.'); setOcupado(false); return }
+      await salvarProduto({ ...p, precoCentavos: centavos })
       aoSalvar()
     } catch {
       setErro('Não consegui salvar. Confira se sua conta está marcada como admin.')
@@ -195,7 +198,7 @@ function Editor({ produto, categorias, aoFechar, aoSalvar }: {
             </label>
           </div>
 
-          {p.tipo === 'servico' && (
+          {(
             <label className="flex items-center gap-2.5 text-sm">
               <input type="checkbox" className="w-4 h-4 accent-brand"
                      checked={Boolean(p.precoSobConsulta)}
@@ -204,7 +207,7 @@ function Editor({ produto, categorias, aoFechar, aoSalvar }: {
             </label>
           )}
 
-          {p.tipo === 'pronto' && (
+          {(
             <label className="block">
               <span className="etiqueta">Quantidade disponível</span>
               <input className="campo mt-1" inputMode="numeric"
@@ -216,6 +219,8 @@ function Editor({ produto, categorias, aoFechar, aoSalvar }: {
             </label>
           )}
 
+          {personalizavel && <div className="space-y-3"><label className="block">Modelo da prévia<select className="campo" value={p.modelo || 'camiseta'} onChange={e => { const modelo = e.target.value as Produto['modelo']; setP(atual => ({ ...atual, modelo, ...(modelo !== 'camiseta' ? { cores: [], tamanhos: [], areas: [] } : {}) })) }}><option value="camiseta">Camiseta</option><option value="caneca">Caneca</option><option value="outro">Outro produto (foto e referência)</option></select></label><label className="block">Opções extras (uma por linha: Material: algodão, linho)<textarea className="campo" defaultValue={p.opcoes?.map(o => `${o.nome}: ${o.valores.join(', ')}`).join('\n') || ''} onBlur={e => mudar('opcoes', e.target.value.split('\n').filter(l => l.trim()).map(l => { const [nome, ...resto] = l.split(':'); return { nome: nome.trim(), valores: resto.join(':').split(',').map(v => v.trim()).filter(Boolean) } }))} /></label></div>}
+          <label className="block">Prazo de produção<input className="campo" value={p.prazoProducao || ''} placeholder="Ex.: até 10 dias úteis antes do envio" onChange={e => mudar('prazoProducao', e.target.value)} /></label>
           {personalizavel && (
             <>
               <Escolhas rotulo="Cores da peça" opcoes={Object.keys(CORES_CAMISETA) as CorCamiseta[]}
@@ -299,11 +304,14 @@ function Fretes({ fretes, aoMudar }: { fretes: Frete[]; aoMudar: (f: Frete[]) =>
   const [regiao, setRegiao] = useState('')
   const [valor, setValor] = useState('')
   const [prazo, setPrazo] = useState('')
+  const [retirada, setRetirada] = useState(false)
+  const [erroFrete, setErroFrete] = useState('')
 
   async function adicionar() {
     if (!regiao.trim()) return
-    const centavos = Math.round(Number(valor.replace(',', '.')) * 100) || 0
-    await salvarFrete({ regiao: regiao.trim(), precoCentavos: centavos, prazo: prazo.trim() })
+    const centavos = retirada ? 0 : Math.round(Number(valor.includes(',') ? valor.replace(/\./g, '').replace(',', '.') : valor) * 100)
+    if (!Number.isSafeInteger(centavos) || centavos < 0) { setErroFrete('Informe um preço de entrega válido.'); return }
+    await salvarFrete({ regiao: regiao.trim(), precoCentavos: centavos, prazo: prazo.trim(), retirada })
     aoMudar(await listarFretes())
     setRegiao(''); setValor(''); setPrazo('')
   }
@@ -322,6 +330,7 @@ function Fretes({ fretes, aoMudar }: { fretes: Frete[]; aoMudar: (f: Frete[]) =>
         Vale para camisetas e peças prontas. Flash e customização não cobram frete.
       </p>
 
+      <label className="flex gap-2 text-sm mb-3"><input type="checkbox" checked={retirada} onChange={e => setRetirada(e.target.checked)} />Retirada no estúdio (sem frete)</label>{erroFrete && <p role="alert">{erroFrete}</p>}
       <div className="flex flex-wrap gap-2 mb-4">
         <input className="campo flex-1 min-w-[160px]" placeholder="Região (ex: São Paulo capital)"
                value={regiao} onChange={(e) => setRegiao(e.target.value)} />
@@ -329,7 +338,7 @@ function Fretes({ fretes, aoMudar }: { fretes: Frete[]; aoMudar: (f: Frete[]) =>
                value={valor} onChange={(e) => setValor(e.target.value)} />
         <input className="campo w-32" placeholder="Prazo"
                value={prazo} onChange={(e) => setPrazo(e.target.value)} />
-        <button onClick={adicionar} className="botao-principal !py-2.5 !px-4"><Plus size={18} /></button>
+        <button aria-label="Adicionar modalidade de entrega" onClick={adicionar} className="botao-principal !py-2.5 !px-4"><Plus size={18} /></button>
       </div>
 
       {fretes.length === 0 ? (

@@ -20,6 +20,8 @@ export async function listarProdutos(): Promise<Produto[]> {
 }
 
 export async function salvarProduto(produto: Omit<Produto, 'id'> & { id?: string }): Promise<string> {
+  // Reservas pertencem às transações do checkout, nunca ao formulário administrativo.
+  produto = Object.fromEntries(Object.entries(produto).filter(([key]) => key !== 'reservas')) as typeof produto
   if (produto.id) {
     const { id, ...dados } = produto
     await setDoc(doc(db, 'produtos', id), dados, { merge: true })

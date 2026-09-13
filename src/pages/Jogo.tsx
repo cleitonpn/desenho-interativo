@@ -41,6 +41,7 @@ import {
   type Journal,
 } from "../lib/corridaProgresso";
 import {
+  call,
   beginRun,
   finishRun,
   myCoupons,
@@ -67,6 +68,8 @@ type Phase = "intro" | "countdown" | "playing" | "paused" | "end";
 const EMPTY = createRun(1),
   STAGES = ["O quintal", "Pelas ruas", "Ateliê do Vital"];
 export function Jogo() {
+  const [offers, setOffers] = useState<{ name: string; ends: number; terms: string }[] | null>(null);
+  useEffect(() => { call<{ name: string; ends: number; terms: string }[]>('listGameOffers', {}).then(setOffers).catch(() => {}); }, []);
   const { usuario } = useAuth(),
     navigate = useNavigate();
   const [catalog, setCatalog] = useState<Catalogo | null>(null),
@@ -683,9 +686,9 @@ export function Jogo() {
                 <button
                   className="run-primary"
                   disabled={busy}
-                  onClick={() => void start("free")}
+                  onClick={() => void start("reward")}
                 >
-                  <Play size={18} /> Bora correr
+                  <Play size={18} /> {usuario ? "Correr por benefícios" : "Entrar e correr por benefícios"}
                 </button>
                 <button
                   className="run-secondary"
@@ -695,14 +698,15 @@ export function Jogo() {
                   Desafio do dia ↗
                 </button>
               </div>
+              <p className="text-sm mt-3">{offers === null ? 'Benefícios sujeitos às campanhas e condições vigentes.' : offers.length ? `Campanhas disponíveis: ${offers.map(o => `${o.name}${o.ends ? ` (até ${new Date(o.ends).toLocaleDateString('pt-BR')})` : ""}`).join(', ')}. Colete o cupom da caixa; o benefício é conferido no final.` : 'Nenhuma campanha com cupons disponíveis neste momento. Você ainda pode correr e desbloquear acessórios.'}</p>
               <button
                 className="run-reward-entry"
                 disabled={busy}
-                onClick={() => void start("reward")}
+                onClick={() => void start("free")}
               >
                 <Gift size={16} />
-                {busy ? "Preparando…" : "Jogar por benefícios"}{" "}
-                <span>requer conta</span>
+                {busy ? "Preparando…" : "Jogar livremente"}{" "}
+                <span>sem benefícios reais</span>
               </button>
               <div className="run-instructions">
                 <span>
@@ -790,7 +794,7 @@ export function Jogo() {
                   </span>
                 ))}
               </div>
-              {run.tickets.length > 0 && !session.current && <p>Cupons de demonstração. Entre e escolha “Jogar por benefícios” para concorrer aos benefícios reais.</p>}
+              {run.tickets.length > 0 && !session.current && <p>Cupons de demonstração. Entre e escolha “Correr por benefícios” para concorrer aos benefícios reais.</p>}
               {rewardStatus && <p role="status">{rewardStatus}</p>}
               {pending && (
                 <button
@@ -817,7 +821,7 @@ export function Jogo() {
               <div className="run-result-actions">
                 <button
                   className="run-primary"
-                  onClick={() => void start("free")}
+                  onClick={() => void start(session.current ? "reward" : daily ? "daily" : "free")}
                   disabled={busy}
                 >
                   <RotateCcw size={16} /> De novo

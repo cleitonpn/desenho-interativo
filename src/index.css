@@ -7,12 +7,12 @@
 @layer base {
   :root {
     color-scheme: light;
-    --c-canvas: 250 249 247;
-    --c-surface: 255 255 255;
-    --c-raised: 245 243 240;
+    --c-canvas: 246 241 231;
+    --c-surface: 253 249 240;
+    --c-raised: 235 226 211;
     --c-line: 228 224 219;
 
-    --c-ink: 17 17 17;
+    --c-ink: 53 47 39;
     --c-muted: 92 88 84;
     --c-faint: 148 143 138;
 
@@ -150,4 +150,15 @@
       max-width: min(24rem, calc((100dvh - 330px) * var(--proporcao, 0.73)));
     }
   }
+}
+
+@layer components {
+  .galeria-shell { background-image: linear-gradient(rgb(var(--c-line) / .15) 1px, transparent 1px); background-size: 100% 28px; }
+  .galeria-header { @apply max-w-7xl mx-auto px-5 py-6 flex justify-between items-center gap-5 flex-wrap border-b-2 border-ink; }
+  .galeria-footer { @apply max-w-7xl mx-auto px-5 py-8 mt-12 border-t-2 border-ink flex justify-between gap-6 flex-wrap; }
+  .galeria-pagina { @apply max-w-6xl mx-auto px-5 py-10; }
+  .referencia { @apply bg-surface border-2 border-ink/25 rounded-xl p-4 text-left transition-colors; }
+  .referencia-ativa { @apply border-brand bg-brand-soft; box-shadow: 3px 3px 0 rgb(var(--c-brand)); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  :focus-visible { outline: 3px solid rgb(var(--c-brand)); outline-offset: 4px; }
 }

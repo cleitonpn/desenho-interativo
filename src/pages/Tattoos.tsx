@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Loader2, MessageCircle, X } from 'lucide-react'
+import { ArrowLeft, Loader2, X } from 'lucide-react'
 import { MARCA } from '../config/marca'
 import { listarTattoos, type Tattoo } from '../lib/conteudo'
 
@@ -50,10 +50,10 @@ export function Tattoos() {
           </p>
           <div className="flex gap-2">
             <Link to="/montar" className="botao-neutro flex-1 !py-2.5">Montar bicho</Link>
-            <a href={`https://wa.me/${MARCA.whatsapp}`} target="_blank" rel="noreferrer"
+            <Link to="/encomendar"
                className="botao-principal flex-1 !py-2.5">
-              <MessageCircle size={18} /> Falar
-            </a>
+              Agendar tattoo
+            </Link>
           </div>
         </div>
       </div>

@@ -594,6 +594,12 @@
   font-size: 12px;
   word-break: break-all;
 }
+.run-coupon .run-coupon-value {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--red);
+}
 .run-ranking {
   display: flex;
   gap: 20px;

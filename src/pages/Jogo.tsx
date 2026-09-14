@@ -54,6 +54,7 @@ import { guardarPartida, pecasJogaveis } from "../lib/jogo";
 import { registrarDescoberta } from "../lib/progresso";
 import { useAuth } from "../contexts/AuthContext";
 import { MARCA } from "../config/marca";
+import { cupomLabel } from '../lib/cupomLabel';
 import {
   DEFAULT_EVENT,
   loadEvent,
@@ -815,7 +816,7 @@ export function Jogo() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Enviar {c.name} para o Vital ↗
+                    {cupomLabel(c)} · Enviar {c.name} para o Vital ↗
                   </a>
                 ))}
               <div className="run-result-actions">
@@ -1096,6 +1097,7 @@ export function Jogo() {
                           />
                         )}
                         <h3>{c.name}</h3>
+                        <p className="run-coupon-value">{cupomLabel(c)}</p>
                         {c.description && <p>{c.description}</p>}
                         <p>{c.terms}</p>
                         <code>{c.code}</code>

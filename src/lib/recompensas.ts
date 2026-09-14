@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { app, db } from "./firebase";
 import { MARCA } from "../config/marca";
+import { cupomLabel } from './cupomLabel';
 import type { Input } from "./corrida";
 
 export interface Reward {
@@ -89,7 +90,7 @@ export async function leaderboard(week: string) {
   return s.docs.map((d) => d.data() as { alias: string; score: number });
 }
 export function couponLink(c: Coupon) {
-  return `https://wa.me/${MARCA.whatsapp}?text=${encodeURIComponent(`Oi, Vital! Ganhei ${c.name} no ${MARCA.nomeCompleto}.\nMeu cupom: ${c.code}\nVálido até ${new Date(c.expires).toLocaleDateString("pt-BR")}.\n${c.terms}\nQuero conversar sobre minha próxima arte!`)}`;
+  return `https://wa.me/${MARCA.whatsapp}?text=${encodeURIComponent(`Oi, Vital! Ganhei ${c.name} no ${MARCA.nomeCompleto}.\nBenefício: ${cupomLabel(c)}.\nMeu cupom: ${c.code}\nVálido até ${new Date(c.expires).toLocaleDateString("pt-BR")}.\n${c.terms}\nQuero conversar sobre minha próxima arte!`)}`;
 }
 export const EMPTY_REWARD: Reward = {
   id: "",

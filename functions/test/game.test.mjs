@@ -276,3 +276,32 @@ test("later sections generate ascending platform sequences", () => {
   assert.ok(platforms.length >= 3);
   assert.ok(platforms.some(o => o.y > 3));
 });
+
+
+test("after collecting a coupon, red boxes keep accessories but never drop more coupons", () => {
+  const r = isolate();
+  r.tickets = [77]; r.y = 1.55; r.vy = 10; r.ground = false;
+  r.things = [thing("gift", 0.08, 3.5, 1.3, 1)];
+  stepRun(r, true);
+  assert.equal(r.boxes, 1);
+  assert.equal(r.gifts.length, 1);
+  assert.equal(r.things.filter(o => o.kind === "accessory").length, 1);
+  assert.equal(r.things.filter(o => o.kind === "coupon").length, 0);
+  assert.ok(!r.notice.includes("cupom"));
+  assert.deepEqual(r.tickets, [77]);
+});
+
+test("the first collected coupon clears all other dropped coupons and cannot be collected twice", () => {
+  const r = isolate();
+  r.things = [
+    { ...thing("coupon", .08, 0, 1.2, .9), sourceId: 70 },
+    { ...thing("coupon", .08, 0, 1.2, .9), id: 2, sourceId: 71 },
+    { ...thing("coupon", 10, 4, 1.2, .9), id: 3, sourceId: 72, flight: 2, originX: 10, originY: 4 },
+  ];
+  stepRun(r, false);
+  assert.deepEqual(r.tickets, [70]);
+  assert.ok(r.things.filter(o => o.kind === "coupon").every(o => o.taken));
+  for (let i = 0; i < 150; i++) stepRun(r, false);
+  assert.deepEqual(r.tickets, [70]);
+  assert.deepEqual(createRun(42).tickets, []);
+});

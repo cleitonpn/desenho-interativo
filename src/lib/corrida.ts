@@ -1,5 +1,5 @@
 /** Fixed-step simulation shared by the browser and the reward server. No browser APIs. */
-export const VERSION = 4;
+export const VERSION = 5;
 export const FPS = 60;
 export const BASE_TICKS = 120 * FPS;
 export const MAX_TICKS = 130 * FPS;
@@ -233,8 +233,9 @@ export function stepRun(r: Run, held: boolean): void {
           w: 0.85, h: 0.85, taken: false,
           sourceId: o.id, flight: 0, originX: o.x, originY: o.y,
         });
-        if (o.kind === "gift") {
-          r.gifts.push(o.id);
+        const dropCoupon = o.kind === "gift" && r.tickets.length === 0;
+        if (o.kind === "gift") r.gifts.push(o.id);
+        if (dropCoupon) {
           r.things.push({
             id: r.seq++, kind: "coupon", x: o.x, y: o.y,
             w: 1.2, h: 0.9, taken: false,
@@ -243,7 +244,7 @@ export function stepRun(r: Run, held: boolean): void {
         }
         feedback(
           r,
-          o.kind === "gift" ? "+50 · Um cupom surpresa! Pegue no caminho" : "+50 · Passe na peça para vestir; pule para deixar",
+          dropCoupon ? "+50 · Um cupom surpresa! Pegue no caminho" : "+50 · Passe na peça para vestir; pule para deixar",
           o.x,
           o.y,
         );
@@ -285,8 +286,12 @@ export function stepRun(r: Run, held: boolean): void {
     if (!touching && !attracted) continue;
     o.taken = true;
     if (o.kind === "coupon") {
-      r.tickets.push(o.sourceId!);
-      feedback(r, "Cupom coletado! Confira no final", o.x, o.y);
+      if (r.tickets.length === 0) {
+        r.tickets.push(o.sourceId!);
+        // One ticket per run. Remove other tickets already dropped or in flight.
+        for (const other of r.things) if (other.kind === "coupon") other.taken = true;
+        feedback(r, "Cupom coletado! Confira no final", o.x, o.y);
+      }
     }
     if (o.kind === "accessory") {
       r.items.push(o.sourceId!);
